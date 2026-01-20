@@ -1,5 +1,7 @@
+from datetime import datetime
 from typing import List, Tuple
 
+from dateutil.relativedelta import relativedelta
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -272,6 +274,13 @@ def _prepare_payment_response(
     return response, application, valid_products
 
 
+def _calculate_max_installments(start_date: datetime) -> int:
+    today = datetime.now()
+    delta = relativedelta(today, start_date)
+    months = delta.years * 12 + delta.months
+    return max(1, months - 1)    
+
+
 def preview_payment(
     db: Session,
     obj: schemas.PaymentCreate,
@@ -304,6 +313,9 @@ def create_payment(
     # --- Create a lookup for product names --- #
     valid_products_names = {p.id: p.name for p in valid_products}
 
+    start_date = application.popup_city.start_date
+    max_installments = _calculate_max_installments(start_date)
+
     reference = {
         'email': application.email,
         'application_id': application.id,
@@ -322,6 +334,7 @@ def create_payment(
     payment_request = simplefi.create_payment(
         response.amount,
         reference=reference,
+        max_installments=max_installments,
         simplefi_api_key=simplefi_api_key,
     )
 
