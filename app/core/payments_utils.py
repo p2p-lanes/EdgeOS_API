@@ -275,10 +275,11 @@ def _prepare_payment_response(
 
 
 def _calculate_max_installments(start_date: datetime) -> int:
+    """Calculate the maximum number of bi-weekly installments based on the start date."""
     today = datetime.now()
-    delta = relativedelta(start_date, today)
-    months = delta.years * 12 + delta.months
-    return max(1, months)
+    delta = start_date - today
+    installments = delta.days // 14  # every 2 weeks
+    return max(1, installments - 1)
 
 
 def preview_payment(

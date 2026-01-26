@@ -81,6 +81,8 @@ def create_payment(
             'max_installments': max_installments,
             'user_email': reference['email'],
             'reference': reference if reference else {},
+            'interval': 'week',
+            'interval_count': 2,  # every 2 weeks
             'notification_url': notification_url,
         }
         return _create_installments_plan(body, simplefi_api_key)
