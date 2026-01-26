@@ -330,7 +330,7 @@ def create_payment(
         ],
     }
 
-    logger.info('Creating payment request. %s', user.email)
+    logger.info('Creating payment request. Email: %s, Amount: %s, Max Installments: %s', user.email, response.amount, max_installments)
     payment_request = simplefi.create_payment(
         response.amount,
         reference=reference,
