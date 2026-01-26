@@ -335,6 +335,7 @@ def create_payment(
         response.amount,
         reference=reference,
         max_installments=max_installments,
+        name='Eclipse Passes',
         simplefi_api_key=simplefi_api_key,
     )
 
