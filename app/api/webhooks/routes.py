@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 import requests
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.applications.crud import calculate_status
@@ -223,12 +223,19 @@ async def send_email_webhook(
 
 @router.post('/simplefi', status_code=status.HTTP_200_OK)
 async def simplefi_webhook(
-    webhook_payload: schemas.SimplefiWebhookPayload,
+    request: Request,
     db: Session = Depends(get_db),
     webhook_cache: WebhookCache = Depends(get_webhook_cache),
 ):
+    raw_body = await request.json()
+    event_type = raw_body.get('event_type')
+
+    if event_type == 'installment_plan_completed':
+        return await _handle_installment_plan_completed(raw_body, db, webhook_cache)
+
+    # Handle payment-related events (new_payment, new_card_payment)
+    webhook_payload = schemas.SimplefiWebhookPayload(**raw_body)
     payment_request_id = webhook_payload.data.payment_request.id
-    event_type = webhook_payload.event_type
 
     fingerprint = f'simplefi:{payment_request_id}:{event_type}'
     if not webhook_cache.add(fingerprint):
@@ -281,3 +288,54 @@ async def simplefi_webhook(
         payment_crud.update(db, payment.id, PaymentUpdate(status='expired'), user)
 
     return {'message': 'Payment status updated successfully'}
+
+
+async def _handle_installment_plan_completed(
+    raw_body: dict,
+    db: Session,
+    webhook_cache: WebhookCache,
+):
+    """Handle the installment_plan_completed webhook event."""
+    webhook_payload = schemas.InstallmentPlanCompletedPayload(**raw_body)
+    entity_id = webhook_payload.entity_id
+    event_type = webhook_payload.event_type
+
+    fingerprint = f'simplefi:installment:{entity_id}:{event_type}'
+    if not webhook_cache.add(fingerprint):
+        logger.info('Webhook already processed. Skipping...')
+        return {'message': 'Webhook already processed'}
+
+    logger.info('Installment plan id: %s, event type: %s', entity_id, event_type)
+
+    # Find payment by external_id matching the installment plan ID
+    payments = payment_crud.find(db, filters=PaymentFilter(external_id=entity_id))
+    if not payments:
+        logger.info('Payment not found for installment plan %s', entity_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Payment not found',
+        )
+
+    payment = payments[0]
+
+    # Idempotent: skip if already approved
+    if payment.status == 'approved':
+        logger.info('Payment %s already approved. Skipping...', payment.id)
+        return {'message': 'Payment already approved'}
+
+    # Log warning if payment is not marked as an installment plan
+    if not payment.is_installment_plan:
+        logger.warning(
+            'Payment %s is not marked as an installment plan but received '
+            'installment_plan_completed webhook',
+            payment.id,
+        )
+
+    # Update installments_paid from webhook data
+    installment_plan = webhook_payload.data.installment_plan
+    payment.installments_paid = installment_plan.paid_installments_count
+
+    user = TokenData(citizen_id=payment.application.citizen_id, email='')
+    payment_crud.approve_payment(db, payment, currency='USD', rate=1, user=user)
+
+    return {'message': 'Installment plan payment approved successfully'}

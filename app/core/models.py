@@ -5,7 +5,7 @@ from app.api.citizens.models import Citizen
 from app.api.email_logs.models import EmailLog
 from app.api.groups.models import Group
 from app.api.organizations.models import Organization
-from app.api.payments.models import Payment, PaymentProduct
+from app.api.payments.models import Payment, PaymentInstallment, PaymentProduct
 from app.api.popup_city.models import PopUpCity
 from app.api.products.models import Product
 
@@ -18,6 +18,7 @@ __all__ = [
     'Group',
     'Organization',
     'Payment',
+    'PaymentInstallment',
     'PaymentProduct',
     'PopUpCity',
     'Product',

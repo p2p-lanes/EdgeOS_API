@@ -68,7 +68,7 @@ def create_payment(
     simplefi_api_key: str,
     reference: Optional[dict] = None,
     max_installments: Optional[int] = None,
-    name: Optional[str] = None
+    name: Optional[str] = None,
 ) -> dict:
     logger.info('Creating payment for amount: %s', amount)
     notification_url = urllib.parse.urljoin(settings.BACKEND_URL, 'webhooks/simplefi')
@@ -81,6 +81,7 @@ def create_payment(
             'max_installments': max_installments,
             'user_email': reference['email'],
             'reference': reference if reference else {},
+            'notification_url': notification_url,
         }
         return _create_installments_plan(body, simplefi_api_key)
 

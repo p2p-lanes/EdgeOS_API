@@ -77,3 +77,34 @@ class SimplefiWebhookPayload(BaseModel):
     entity_type: str
     entity_id: str
     data: SimplefiDataModel
+
+
+# Installment Plan Webhook Models
+
+
+class InstallmentPlanReference(BaseModel):
+    model_config = ConfigDict(extra='allow')
+
+
+class InstallmentPlanModel(BaseModel):
+    id: str
+    status: str
+    paid_installments_count: int
+    number_of_installments: int
+    user_email: str
+    payment_method: str
+    reference: Optional[InstallmentPlanReference] = None
+    model_config = ConfigDict(extra='allow')
+
+
+class InstallmentPlanCompletedData(BaseModel):
+    installment_plan: InstallmentPlanModel
+
+
+class InstallmentPlanCompletedPayload(BaseModel):
+    id: Optional[str] = None
+    event_type: str
+    entity_type: str
+    entity_id: str
+    merchant_id: Optional[str] = None
+    data: InstallmentPlanCompletedData

@@ -670,3 +670,219 @@ def test_edit_passes_payment_cheaper_product(
             assert attendee.attendee_products[0].quantity == 1
         else:
             assert len(attendee.attendee_products) == 0
+
+
+def test_simplefi_installment_plan_completed_webhook(
+    client,
+    auth_headers,
+    test_payment_data,
+    test_products,
+    mock_create_payment,
+    mock_webhook_cache,
+    mock_email_template,
+    db_session,
+):
+    """Test that installment_plan_completed webhook approves payment."""
+    from app.api.applications.models import Application
+
+    application = db_session.get(Application, test_payment_data['application_id'])
+    application.status = ApplicationStatus.ACCEPTED.value
+    application.scholarship_request = False
+    application.discount_assigned = None
+    db_session.commit()
+
+    # Create a payment with installments
+    mock_response = {
+        'id': 'installment_plan_123',
+        'status': 'pending',
+        'checkout_url': 'https://test.checkout.url',
+    }
+    mock_create_payment.return_value = mock_response
+
+    test_payment_data['installments'] = 3
+    response = client.post('/payments/', json=test_payment_data, headers=auth_headers)
+    assert response.status_code == status.HTTP_200_OK
+    payment = response.json()
+
+    # Mark as installment plan in DB
+    db_payment = db_session.get(Payment, payment['id'])
+    db_payment.is_installment_plan = True
+    db_payment.installments_total = 3
+    db_session.commit()
+
+    # Send installment_plan_completed webhook
+    webhook_data = {
+        'id': 'webhook_123',
+        'event_type': 'installment_plan_completed',
+        'entity_type': 'installment_plan',
+        'entity_id': 'installment_plan_123',
+        'merchant_id': 'merchant_abc',
+        'data': {
+            'installment_plan': {
+                'id': 'installment_plan_123',
+                'status': 'completed',
+                'paid_installments_count': 3,
+                'number_of_installments': 3,
+                'user_email': 'test@example.com',
+                'payment_method': 'card',
+            }
+        },
+    }
+
+    response = client.post('/webhooks/simplefi', json=webhook_data)
+    assert response.status_code == status.HTTP_200_OK
+    assert (
+        response.json()['message'] == 'Installment plan payment approved successfully'
+    )
+
+    # Verify payment was approved
+    payment_response = client.get(f'/payments/{payment["id"]}', headers=auth_headers)
+    assert payment_response.json()['status'] == 'approved'
+    assert payment_response.json()['installments_paid'] == 3
+
+
+def test_simplefi_installment_webhook_duplicate(
+    client,
+    auth_headers,
+    test_payment_data,
+    test_products,
+    mock_create_payment,
+    mock_email_template,
+    db_session,
+):
+    """Test that duplicate installment webhooks are rejected."""
+    from app.api.applications.models import Application
+
+    application = db_session.get(Application, test_payment_data['application_id'])
+    application.status = ApplicationStatus.ACCEPTED.value
+    application.scholarship_request = False
+    application.discount_assigned = None
+    db_session.commit()
+
+    mock_response = {
+        'id': 'installment_plan_456',
+        'status': 'pending',
+        'checkout_url': 'https://test.checkout.url',
+    }
+    mock_create_payment.return_value = mock_response
+
+    response = client.post('/payments/', json=test_payment_data, headers=auth_headers)
+    assert response.status_code == status.HTTP_200_OK
+    payment = response.json()
+
+    db_payment = db_session.get(Payment, payment['id'])
+    db_payment.is_installment_plan = True
+    db_payment.installments_total = 3
+    db_session.commit()
+
+    webhook_data = {
+        'id': 'webhook_456',
+        'event_type': 'installment_plan_completed',
+        'entity_type': 'installment_plan',
+        'entity_id': 'installment_plan_456',
+        'data': {
+            'installment_plan': {
+                'id': 'installment_plan_456',
+                'status': 'completed',
+                'paid_installments_count': 3,
+                'number_of_installments': 3,
+                'user_email': 'test@example.com',
+                'payment_method': 'card',
+            }
+        },
+    }
+
+    # First webhook should succeed
+    response = client.post('/webhooks/simplefi', json=webhook_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    # Second webhook should be marked as duplicate
+    response = client.post('/webhooks/simplefi', json=webhook_data)
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()['message'] == 'Webhook already processed'
+
+
+def test_simplefi_installment_webhook_payment_not_found(
+    client,
+    mock_webhook_cache,
+):
+    """Test that 404 is returned when payment is not found."""
+    webhook_data = {
+        'id': 'webhook_789',
+        'event_type': 'installment_plan_completed',
+        'entity_type': 'installment_plan',
+        'entity_id': 'nonexistent_plan_id',
+        'data': {
+            'installment_plan': {
+                'id': 'nonexistent_plan_id',
+                'status': 'completed',
+                'paid_installments_count': 3,
+                'number_of_installments': 3,
+                'user_email': 'test@example.com',
+                'payment_method': 'card',
+            }
+        },
+    }
+
+    response = client.post('/webhooks/simplefi', json=webhook_data)
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()['detail'] == 'Payment not found'
+
+
+def test_simplefi_installment_webhook_already_approved(
+    client,
+    auth_headers,
+    test_payment_data,
+    test_products,
+    mock_create_payment,
+    mock_webhook_cache,
+    mock_email_template,
+    db_session,
+):
+    """Test that already approved payments return 200 (idempotent)."""
+    from app.api.applications.models import Application
+
+    application = db_session.get(Application, test_payment_data['application_id'])
+    application.status = ApplicationStatus.ACCEPTED.value
+    application.scholarship_request = False
+    application.discount_assigned = None
+    db_session.commit()
+
+    mock_response = {
+        'id': 'installment_plan_approved',
+        'status': 'pending',
+        'checkout_url': 'https://test.checkout.url',
+    }
+    mock_create_payment.return_value = mock_response
+
+    response = client.post('/payments/', json=test_payment_data, headers=auth_headers)
+    assert response.status_code == status.HTTP_200_OK
+    payment = response.json()
+
+    # Mark payment as already approved
+    db_payment = db_session.get(Payment, payment['id'])
+    db_payment.is_installment_plan = True
+    db_payment.installments_total = 3
+    db_payment.status = 'approved'
+    db_session.commit()
+
+    webhook_data = {
+        'id': 'webhook_approved',
+        'event_type': 'installment_plan_completed',
+        'entity_type': 'installment_plan',
+        'entity_id': 'installment_plan_approved',
+        'data': {
+            'installment_plan': {
+                'id': 'installment_plan_approved',
+                'status': 'completed',
+                'paid_installments_count': 3,
+                'number_of_installments': 3,
+                'user_email': 'test@example.com',
+                'payment_method': 'card',
+            }
+        },
+    }
+
+    response = client.post('/webhooks/simplefi', json=webhook_data)
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()['message'] == 'Payment already approved'
