@@ -92,7 +92,7 @@ class InstallmentPlanModel(BaseModel):
     paid_installments_count: int
     number_of_installments: int
     user_email: str
-    payment_method: str
+    payment_method: Optional[str]
     reference: Optional[InstallmentPlanReference] = None
     model_config = ConfigDict(extra='allow')
 
