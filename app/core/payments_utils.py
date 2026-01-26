@@ -276,9 +276,9 @@ def _prepare_payment_response(
 
 def _calculate_max_installments(start_date: datetime) -> int:
     today = datetime.now()
-    delta = relativedelta(today, start_date)
+    delta = relativedelta(start_date, today)
     months = delta.years * 12 + delta.months
-    return max(1, months - 1)    
+    return max(1, months)
 
 
 def preview_payment(
@@ -314,7 +314,7 @@ def create_payment(
     valid_products_names = {p.id: p.name for p in valid_products}
 
     start_date = application.popup_city.start_date
-    max_installments = _calculate_max_installments(start_date)
+    max_installments = _calculate_max_installments(start_date) if start_date is not None else None
 
     reference = {
         'email': application.email,
