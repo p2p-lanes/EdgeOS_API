@@ -50,6 +50,8 @@ class PaymentPreview(PaymentCreate, PaymentBase):
     coupon_code: Optional[str] = None
     discount_value: Optional[float] = None
     group_id: Optional[int] = None
+    is_installment_plan: bool = False
+    installments_total: Optional[int] = None
 
 
 class PaymentUpdate(BaseModel):

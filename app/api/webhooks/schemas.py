@@ -108,3 +108,7 @@ class InstallmentPlanCompletedPayload(BaseModel):
     entity_id: str
     merchant_id: Optional[str] = None
     data: InstallmentPlanCompletedData
+
+
+# Reuse same structure for activated webhook
+InstallmentPlanActivatedPayload = InstallmentPlanCompletedPayload

@@ -233,6 +233,9 @@ async def simplefi_webhook(
     if event_type == 'installment_plan_completed':
         return await _handle_installment_plan_completed(raw_body, db, webhook_cache)
 
+    if event_type == 'installment_plan_activated':
+        return await _handle_installment_plan_activated(raw_body, db, webhook_cache)
+
     # Handle payment-related events (new_payment, new_card_payment)
     webhook_payload = schemas.SimplefiWebhookPayload(**raw_body)
     payment_request_id = webhook_payload.data.payment_request.id
@@ -339,3 +342,45 @@ async def _handle_installment_plan_completed(
     payment_crud.approve_payment(db, payment, currency='USD', rate=1, user=user)
 
     return {'message': 'Installment plan payment approved successfully'}
+
+
+async def _handle_installment_plan_activated(
+    raw_body: dict,
+    db: Session,
+    webhook_cache: WebhookCache,
+):
+    """Handle the installment_plan_activated webhook event."""
+    webhook_payload = schemas.InstallmentPlanActivatedPayload(**raw_body)
+    entity_id = webhook_payload.entity_id
+    event_type = webhook_payload.event_type
+
+    fingerprint = f'simplefi:installment:{entity_id}:{event_type}'
+    if not webhook_cache.add(fingerprint):
+        logger.info('Webhook already processed. Skipping...')
+        return {'message': 'Webhook already processed'}
+
+    logger.info('Installment plan activated: %s', entity_id)
+
+    # Find payment by external_id matching the installment plan ID
+    payments = payment_crud.find(db, filters=PaymentFilter(external_id=entity_id))
+    if not payments:
+        logger.info('Payment not found for installment plan %s', entity_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Payment not found',
+        )
+
+    payment = payments[0]
+    installment_plan = webhook_payload.data.installment_plan
+
+    # Update installments_total with actual number chosen by user
+    payment.installments_total = installment_plan.number_of_installments
+    db.commit()
+
+    logger.info(
+        'Payment %s: installments_total updated to %s',
+        payment.id,
+        installment_plan.number_of_installments,
+    )
+
+    return {'message': 'Installment plan activated successfully'}

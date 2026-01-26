@@ -343,4 +343,8 @@ def create_payment(
     response.status = payment_request['status']
     response.checkout_url = payment_request['checkout_url']
 
+    # Set installment plan fields
+    if max_installments is not None and max_installments > 1:
+        response.is_installment_plan = True
+
     return response
