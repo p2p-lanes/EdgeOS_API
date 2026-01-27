@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import List, Tuple
 
-from dateutil.relativedelta import relativedelta
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -15,6 +14,7 @@ from app.api.products.crud import product as product_crud
 from app.api.products.models import Product
 from app.api.products.schemas import ProductFilter
 from app.core import simplefi
+from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import TokenData
 
@@ -279,7 +279,7 @@ def _calculate_max_installments(start_date: datetime) -> int:
     today = datetime.now()
     delta = start_date - today
     installments = delta.days // 14  # every 2 weeks
-    return max(1, installments - 1)
+    return min(max(1, installments - 1), settings.MAX_ALLOWED_INSTALLMENTS)
 
 
 def preview_payment(

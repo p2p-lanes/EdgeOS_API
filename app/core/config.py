@@ -70,5 +70,7 @@ class Settings:
 
     GEMINI_API_KEY: str = os.getenv('GEMINI_API_KEY')
 
+    MAX_ALLOWED_INSTALLMENTS: int = int(os.getenv('MAX_ALLOWED_INSTALLMENTS', '6'))
+
 
 settings = Settings()
