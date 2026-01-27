@@ -64,6 +64,7 @@ class PaymentRequestModel(BaseModel):
     transactions: List[TransactionModel]
     card_payment: Optional[CardPaymentModel] = None
     payments: List[PaymentInfo]
+    installment_plan_id: Optional[str] = None
 
 
 class SimplefiDataModel(BaseModel):

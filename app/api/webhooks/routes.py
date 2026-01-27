@@ -11,6 +11,7 @@ from app.api.email_logs.crud import email_log
 from app.api.email_logs.models import EmailLog
 from app.api.email_logs.schemas import EmailEvent, EmailStatus
 from app.api.payments.crud import payment as payment_crud
+from app.api.payments.models import PaymentInstallment
 from app.api.payments.schemas import PaymentFilter, PaymentUpdate
 from app.api.webhooks import schemas
 from app.api.webhooks.dependencies import get_webhook_cache
@@ -238,6 +239,23 @@ async def simplefi_webhook(
 
     # Handle payment-related events (new_payment, new_card_payment)
     webhook_payload = schemas.SimplefiWebhookPayload(**raw_body)
+
+    # Check if this is an installment payment
+    installment_plan_id = webhook_payload.data.payment_request.installment_plan_id
+    if installment_plan_id:
+        return await _handle_installment_payment(webhook_payload, db, webhook_cache)
+
+    # Otherwise continue with regular payment flow
+    return await _handle_regular_payment(webhook_payload, db, webhook_cache)
+
+
+async def _handle_regular_payment(
+    webhook_payload: schemas.SimplefiWebhookPayload,
+    db: Session,
+    webhook_cache: WebhookCache,
+):
+    """Handle new_payment/new_card_payment for regular (non-installment) payments."""
+    event_type = webhook_payload.event_type
     payment_request_id = webhook_payload.data.payment_request.id
 
     fingerprint = f'simplefi:{payment_request_id}:{event_type}'
@@ -291,6 +309,80 @@ async def simplefi_webhook(
         payment_crud.update(db, payment.id, PaymentUpdate(status='expired'), user)
 
     return {'message': 'Payment status updated successfully'}
+
+
+async def _handle_installment_payment(
+    webhook_payload: schemas.SimplefiWebhookPayload,
+    db: Session,
+    webhook_cache: WebhookCache,
+):
+    """Handle new_payment/new_card_payment for installment plans."""
+    payment_request = webhook_payload.data.payment_request
+    installment_plan_id = payment_request.installment_plan_id
+    new_payment = webhook_payload.data.new_payment
+    payment_request_id = payment_request.id  # Unique per installment
+
+    # Idempotency: use payment_request.id (unique per installment)
+    fingerprint = f'simplefi:installment:{installment_plan_id}:{payment_request_id}'
+    if not webhook_cache.add(fingerprint):
+        logger.info('Webhook already processed. Skipping...')
+        return {'message': 'Webhook already processed'}
+
+    logger.info(
+        'Installment payment: plan_id=%s, payment_request_id=%s',
+        installment_plan_id,
+        payment_request_id,
+    )
+
+    # Look up Payment by installment_plan_id (stored in external_id)
+    payments = payment_crud.find(
+        db, filters=PaymentFilter(external_id=installment_plan_id)
+    )
+    if not payments:
+        logger.info('Payment not found for installment plan %s', installment_plan_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Payment not found',
+        )
+
+    payment = payments[0]
+
+    # Extract payment details
+    if isinstance(new_payment, schemas.PaymentInfo):
+        amount = new_payment.amount
+        currency = new_payment.coin
+        paid_at = new_payment.paid_at
+    else:
+        amount = payment_request.amount_paid
+        currency = new_payment.coin if new_payment else 'USD'
+        paid_at = current_time()
+
+    # Create PaymentInstallment record
+    installment_number = len(payment.installments) + 1
+    installment = PaymentInstallment(
+        payment_id=payment.id,
+        external_payment_id=payment_request_id,
+        installment_number=installment_number,
+        amount=amount,
+        currency=currency,
+        paid_at=paid_at,
+    )
+    db.add(installment)
+
+    # Increment installments_paid
+    payment.installments_paid = (payment.installments_paid or 0) + 1
+    db.commit()
+
+    logger.info(
+        'Installment %s recorded for payment %s (paid: %s/%s)',
+        installment_number,
+        payment.id,
+        payment.installments_paid,
+        payment.installments_total,
+    )
+
+    # DO NOT approve - approval only on installment_plan_completed
+    return {'message': 'Installment payment recorded'}
 
 
 async def _handle_installment_plan_completed(
