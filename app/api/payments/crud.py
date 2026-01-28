@@ -141,6 +141,28 @@ class CRUDPayment(
                     )
                 )
 
+    def _remove_products_from_attendees(
+        self, db: Session, payment: models.Payment
+    ) -> None:
+        """Remove products from attendees that were added by this payment."""
+        if not payment.products_snapshot:
+            return
+
+        logger.info('Removing products from attendees for payment %s', payment.id)
+        for product_snapshot in payment.products_snapshot:
+            # Find and remove the AttendeeProduct record matching this payment's snapshot
+            attendee_product = (
+                db.query(AttendeeProduct)
+                .filter(
+                    AttendeeProduct.attendee_id == product_snapshot.attendee.id,
+                    AttendeeProduct.product_id == product_snapshot.product_id,
+                    AttendeeProduct.quantity == product_snapshot.quantity,
+                )
+                .first()
+            )
+            if attendee_product:
+                db.delete(attendee_product)
+
     def _clear_application_products(self, db: Session, payment: models.Payment) -> None:
         logger.info('Removing products from attendees')
         application = payment.application

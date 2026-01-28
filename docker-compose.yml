@@ -74,7 +74,7 @@ services:
       retries: 10
       test: "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
       timeout: 2s
-    image: postgres
+    image: postgres:16
     restart: always
     ports:
       - "5432:5432"

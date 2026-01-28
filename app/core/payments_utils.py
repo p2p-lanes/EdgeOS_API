@@ -315,7 +315,9 @@ def create_payment(
     valid_products_names = {p.id: p.name for p in valid_products}
 
     start_date = application.popup_city.start_date
-    max_installments = _calculate_max_installments(start_date) if start_date is not None else None
+    max_installments = (
+        _calculate_max_installments(start_date) if start_date is not None else None
+    )
 
     reference = {
         'email': application.email,
@@ -331,7 +333,12 @@ def create_payment(
         ],
     }
 
-    logger.info('Creating payment request. Email: %s, Amount: %s, Max Installments: %s', user.email, response.amount, max_installments)
+    logger.info(
+        'Creating payment request. Email: %s, Amount: %s, Max Installments: %s',
+        user.email,
+        response.amount,
+        max_installments,
+    )
     payment_request = simplefi.create_payment(
         response.amount,
         reference=reference,

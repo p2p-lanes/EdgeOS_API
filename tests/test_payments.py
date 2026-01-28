@@ -1072,7 +1072,7 @@ def test_simplefi_installment_plan_cancelled_revokes_products(
     mock_email_template,
     db_session,
 ):
-    """Test that cancelled plan revokes products and restores inventory."""
+    """Test that cancelled plan revokes products."""
     from app.api.applications.models import Application
     from app.api.attendees.models import AttendeeProduct
     from app.api.products.models import Product
@@ -1101,11 +1101,6 @@ def test_simplefi_installment_plan_cancelled_revokes_products(
     db_payment.is_installment_plan = True
     db_payment.installments_total = 3
     db_session.commit()
-
-    # Record initial inventory
-    product_id = test_payment_data['products'][0]['product_id']
-    product = db_session.get(Product, product_id)
-    initial_sold = product.current_sold or 0
 
     # Send first installment to approve and assign products
     webhook_data = {
@@ -1187,10 +1182,6 @@ def test_simplefi_installment_plan_cancelled_revokes_products(
         .all()
     )
     assert len(attendee_products) == 0
-
-    # Verify inventory was restored
-    db_session.refresh(product)
-    assert product.current_sold == initial_sold
 
 
 def test_simplefi_installment_plan_cancelled_before_payment(

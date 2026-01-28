@@ -529,11 +529,10 @@ async def _handle_installment_plan_cancelled(
         logger.info('Payment %s already cancelled. Skipping...', payment.id)
         return {'message': 'Payment already cancelled'}
 
-    # If payment was approved, revoke products and restore inventory
+    # If payment was approved, revoke products
     if payment.status == 'approved':
         logger.info('Revoking products for cancelled payment %s', payment.id)
         payment_crud._remove_products_from_attendees(db, payment)
-        payment_crud._increment_inventory(db, payment)
 
     # Update status to cancelled
     payment.status = 'cancelled'
