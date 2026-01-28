@@ -113,3 +113,6 @@ class InstallmentPlanCompletedPayload(BaseModel):
 
 # Reuse same structure for activated webhook
 InstallmentPlanActivatedPayload = InstallmentPlanCompletedPayload
+
+# Reuse same structure for cancelled webhook
+InstallmentPlanCancelledPayload = InstallmentPlanCompletedPayload

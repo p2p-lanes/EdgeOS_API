@@ -237,6 +237,9 @@ async def simplefi_webhook(
     if event_type == 'installment_plan_activated':
         return await _handle_installment_plan_activated(raw_body, db, webhook_cache)
 
+    if event_type == 'installment_plan_cancelled':
+        return await _handle_installment_plan_cancelled(raw_body, db, webhook_cache)
+
     # Handle payment-related events (new_payment, new_card_payment)
     webhook_payload = schemas.SimplefiWebhookPayload(**raw_body)
 
@@ -369,6 +372,13 @@ async def _handle_installment_payment(
     )
     db.add(installment)
 
+    # Check if this is the first installment - approve payment to assign products
+    is_first_installment = (payment.installments_paid or 0) == 0
+    if is_first_installment and payment.status != 'approved':
+        user = TokenData(citizen_id=payment.application.citizen_id, email='')
+        payment_crud.approve_payment(db, payment, currency=currency, rate=1, user=user)
+        logger.info('First installment received - payment %s approved', payment.id)
+
     # Increment installments_paid
     payment.installments_paid = (payment.installments_paid or 0) + 1
     db.commit()
@@ -381,7 +391,6 @@ async def _handle_installment_payment(
         payment.installments_total,
     )
 
-    # DO NOT approve - approval only on installment_plan_completed
     return {'message': 'Installment payment recorded'}
 
 
@@ -413,11 +422,6 @@ async def _handle_installment_plan_completed(
 
     payment = payments[0]
 
-    # Idempotent: skip if already approved
-    if payment.status == 'approved':
-        logger.info('Payment %s already approved. Skipping...', payment.id)
-        return {'message': 'Payment already approved'}
-
     # Log warning if payment is not marked as an installment plan
     if not payment.is_installment_plan:
         logger.warning(
@@ -426,7 +430,21 @@ async def _handle_installment_plan_completed(
             payment.id,
         )
 
-    # Update installments_paid from webhook data
+    # Idempotent: if already approved, just sync installments_paid
+    if payment.status == 'approved':
+        logger.info(
+            'Payment %s already approved, syncing installments_paid', payment.id
+        )
+        installment_plan = webhook_payload.data.installment_plan
+        payment.installments_paid = installment_plan.paid_installments_count
+        db.commit()
+        return {'message': 'Installment plan completed - count synced'}
+
+    # Edge case: plan completed but payment not approved (shouldn't happen normally)
+    logger.warning(
+        'Payment %s not approved when installment_plan_completed received',
+        payment.id,
+    )
     installment_plan = webhook_payload.data.installment_plan
     payment.installments_paid = installment_plan.paid_installments_count
 
@@ -476,3 +494,50 @@ async def _handle_installment_plan_activated(
     )
 
     return {'message': 'Installment plan activated successfully'}
+
+
+async def _handle_installment_plan_cancelled(
+    raw_body: dict,
+    db: Session,
+    webhook_cache: WebhookCache,
+):
+    """Handle the installment_plan_cancelled webhook event."""
+    webhook_payload = schemas.InstallmentPlanCancelledPayload(**raw_body)
+    entity_id = webhook_payload.entity_id
+    event_type = webhook_payload.event_type
+
+    fingerprint = f'simplefi:installment:{entity_id}:{event_type}'
+    if not webhook_cache.add(fingerprint):
+        logger.info('Webhook already processed. Skipping...')
+        return {'message': 'Webhook already processed'}
+
+    logger.info('Installment plan cancelled: %s', entity_id)
+
+    # Find payment by external_id matching the installment plan ID
+    payments = payment_crud.find(db, filters=PaymentFilter(external_id=entity_id))
+    if not payments:
+        logger.info('Payment not found for installment plan %s', entity_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Payment not found',
+        )
+
+    payment = payments[0]
+
+    # Idempotent: skip if already cancelled
+    if payment.status == 'cancelled':
+        logger.info('Payment %s already cancelled. Skipping...', payment.id)
+        return {'message': 'Payment already cancelled'}
+
+    # If payment was approved, revoke products and restore inventory
+    if payment.status == 'approved':
+        logger.info('Revoking products for cancelled payment %s', payment.id)
+        payment_crud._remove_products_from_attendees(db, payment)
+        payment_crud._increment_inventory(db, payment)
+
+    # Update status to cancelled
+    payment.status = 'cancelled'
+    db.commit()
+
+    logger.info('Payment %s cancelled', payment.id)
+    return {'message': 'Installment plan cancelled successfully'}
