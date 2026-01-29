@@ -31,6 +31,13 @@ def _create_payment_request(body: dict, simplefi_api_key: str):
         response = post_request()
         logger.info('Simplefi response status (retry): %s', response.status_code)
 
+    if response.status_code >= 400:
+        try:
+            logger.error('Error payload:')
+            logger.error(response.json())
+        except ValueError:
+            logger.error('Error payload: %s', response.text)
+
     response.raise_for_status()
     return response.json()
 
