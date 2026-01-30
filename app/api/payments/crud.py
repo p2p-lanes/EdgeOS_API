@@ -118,7 +118,8 @@ class CRUDPayment(
 
             self._add_products_to_attendees(db_payment)
             group = self._create_ambassador_group(db, db_payment)
-            self._send_payment_confirmed_email(db_payment, group)
+            if not db_payment.is_installment_plan:
+                self._send_payment_confirmed_email(db_payment, group)
 
         db.commit()
         db.refresh(db_payment)
@@ -260,7 +261,8 @@ class CRUDPayment(
 
         self._add_products_to_attendees(payment)
         group = self._create_ambassador_group(db, payment)
-        self._send_payment_confirmed_email(payment, group)
+        if not payment.is_installment_plan:
+            self._send_payment_confirmed_email(payment, group)
 
         logger.info('Payment %s approved', payment.id)
         db.commit()

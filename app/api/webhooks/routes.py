@@ -430,13 +430,15 @@ async def _handle_installment_plan_completed(
             payment.id,
         )
 
-    # Idempotent: if already approved, just sync installments_paid
+    # Idempotent: if already approved, just sync installments_paid and send email
     if payment.status == 'approved':
         logger.info(
             'Payment %s already approved, syncing installments_paid', payment.id
         )
         installment_plan = webhook_payload.data.installment_plan
         payment.installments_paid = installment_plan.paid_installments_count
+        group = payment_crud._create_ambassador_group(db, payment)
+        payment_crud._send_payment_confirmed_email(payment, group)
         db.commit()
         return {'message': 'Installment plan completed - count synced'}
 
@@ -450,6 +452,8 @@ async def _handle_installment_plan_completed(
 
     user = TokenData(citizen_id=payment.application.citizen_id, email='')
     payment_crud.approve_payment(db, payment, currency='USD', rate=1, user=user)
+    group = payment_crud._create_ambassador_group(db, payment)
+    payment_crud._send_payment_confirmed_email(payment, group)
 
     return {'message': 'Installment plan payment approved successfully'}
 
