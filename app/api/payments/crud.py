@@ -66,9 +66,11 @@ class CRUDPayment(
         obj: schemas.PaymentCreate,
         user: Optional[TokenData] = None,
     ) -> models.Payment:
-        payment_data = payments_utils.create_payment(db, obj, user)
+        payment_data, insurance_per_item = payments_utils.create_payment(db, obj, user)
 
-        payment_dict = payment_data.model_dump(exclude={'products', 'original_amount'})
+        payment_dict = payment_data.model_dump(
+            exclude={'products', 'original_amount', 'insurance', 'insurance_amount'}
+        )
         payment_dict['edit_passes'] = obj.edit_passes
         db_payment = self.model(**payment_dict)
 
@@ -94,6 +96,11 @@ class CRUDPayment(
 
             for product in obj.products:
                 product_id = product.product_id
+                item_key = (product_id, product.attendee_id)
+                has_insurance = (
+                    obj.insurance
+                    and products_data[product_id].insurance_percentage is not None
+                )
                 payment_product = models.PaymentProduct(
                     payment_id=db_payment.id,
                     product_id=product_id,
@@ -103,6 +110,8 @@ class CRUDPayment(
                     product_description=products_data[product_id].description,
                     product_price=products_data[product_id].price,
                     product_category=products_data[product_id].category,
+                    insurance_applied=has_insurance,
+                    insurance_price=insurance_per_item.get(item_key),
                 )
                 db.add(payment_product)
 

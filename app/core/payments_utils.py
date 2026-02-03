@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -40,11 +40,37 @@ def _get_credit(application: Application, discount_value: float) -> float:
     return _get_discounted_price(total, discount_value) + application.credit
 
 
+def _calculate_insurance_amount(
+    requested_products: List[schemas.PaymentProduct],
+    product_models: Dict[int, Product],
+) -> Tuple[float, Dict[Tuple[int, int], float]]:
+    total_insurance = 0.0
+    insurance_per_item: Dict[Tuple[int, int], float] = {}
+
+    for req_prod in requested_products:
+        product_model = product_models.get(req_prod.product_id)
+        if not product_model or product_model.insurance_percentage is None:
+            continue
+
+        item_insurance = round(
+            product_model.price
+            * req_prod.quantity
+            * product_model.insurance_percentage
+            / 100,
+            2,
+        )
+        insurance_per_item[(req_prod.product_id, req_prod.attendee_id)] = item_insurance
+        total_insurance += item_insurance
+
+    return round(total_insurance, 2), insurance_per_item
+
+
 def _calculate_amounts(
     db: Session,
     requested_products: List[schemas.PaymentProduct],
     already_patreon: bool,
-) -> Tuple[float, float, float]:
+    insurance: bool = False,
+) -> Tuple[float, float, float, float, Dict[Tuple[int, int], float]]:
     product_ids = list(set(rp.product_id for rp in requested_products))
     product_models = {
         p.id: p for p in db.query(Product).filter(Product.id.in_(product_ids)).all()
@@ -83,7 +109,21 @@ def _calculate_amounts(
     logger.info('Supporter amount: %s', supporter_amount)
     logger.info('Patreon amount: %s', patreon_amount)
 
-    return standard_amount, supporter_amount, patreon_amount
+    insurance_amount = 0.0
+    insurance_per_item: Dict[Tuple[int, int], float] = {}
+    if insurance:
+        insurance_amount, insurance_per_item = _calculate_insurance_amount(
+            requested_products, product_models
+        )
+        logger.info('Insurance amount: %s', insurance_amount)
+
+    return (
+        standard_amount,
+        supporter_amount,
+        patreon_amount,
+        insurance_amount,
+        insurance_per_item,
+    )
 
 
 def _calculate_price(
@@ -181,7 +221,7 @@ def _apply_discounts(
     obj: schemas.PaymentCreate,
     application: Application,
     already_patreon: bool,
-) -> PaymentPreview:
+) -> Tuple[PaymentPreview, Dict[Tuple[int, int], float]]:
     discount_assigned = application.discount_assigned or 0
 
     response = PaymentPreview(
@@ -190,12 +230,20 @@ def _apply_discounts(
         currency='USD',
         edit_passes=obj.edit_passes,
         discount_value=discount_assigned,
+        insurance=obj.insurance,
     )
 
-    standard_amount, supporter_amount, patreon_amount = _calculate_amounts(
+    (
+        standard_amount,
+        supporter_amount,
+        patreon_amount,
+        insurance_amount,
+        insurance_per_item,
+    ) = _calculate_amounts(
         db,
         obj.products,
         already_patreon,
+        insurance=obj.insurance,
     )
 
     response.original_amount = standard_amount + supporter_amount + patreon_amount
@@ -243,14 +291,20 @@ def _apply_discounts(
             response.coupon_code = coupon_code.code
             response.discount_value = coupon_code.discount_value
 
-    return response
+    if insurance_amount > 0:
+        response.insurance_amount = insurance_amount
+        response.amount = round(response.amount + insurance_amount, 2)
+
+    return response, insurance_per_item
 
 
 def _prepare_payment_response(
     db: Session,
     obj: schemas.PaymentCreate,
     user: TokenData,
-) -> Tuple[schemas.PaymentPreview, Application, List[Product]]:
+) -> Tuple[
+    schemas.PaymentPreview, Application, List[Product], Dict[Tuple[int, int], float]
+]:
     application = application_crud.get(db, obj.application_id, user)
     _validate_application(application)
 
@@ -264,14 +318,14 @@ def _prepare_payment_response(
         obj.edit_passes,
     )
 
-    response = _apply_discounts(
+    response, insurance_per_item = _apply_discounts(
         db,
         obj,
         application,
         already_patreon,
     )
 
-    return response, application, valid_products
+    return response, application, valid_products, insurance_per_item
 
 
 def _calculate_max_installments(start_date: datetime) -> int:
@@ -287,7 +341,7 @@ def preview_payment(
     obj: schemas.PaymentCreate,
     user: TokenData,
 ) -> schemas.PaymentPreview:
-    response, _, _ = _prepare_payment_response(db, obj, user)
+    response, _, _, _ = _prepare_payment_response(db, obj, user)
     return response
 
 
@@ -295,8 +349,10 @@ def create_payment(
     db: Session,
     obj: schemas.PaymentCreate,
     user: TokenData,
-) -> PaymentPreview:
-    response, application, valid_products = _prepare_payment_response(db, obj, user)
+) -> Tuple[PaymentPreview, Dict[Tuple[int, int], float]]:
+    response, application, valid_products, insurance_per_item = (
+        _prepare_payment_response(db, obj, user)
+    )
     simplefi_api_key = _get_simplefi_api_key(application)
 
     if response.amount <= 0:
@@ -309,7 +365,7 @@ def create_payment(
         db.commit()
         db.refresh(application)
 
-        return response
+        return response, insurance_per_item
 
     # --- Create a lookup for product names --- #
     valid_products_names = {p.id: p.name for p in valid_products}
@@ -355,4 +411,4 @@ def create_payment(
     if max_installments is not None and max_installments > 1:
         response.is_installment_plan = True
 
-    return response
+    return response, insurance_per_item

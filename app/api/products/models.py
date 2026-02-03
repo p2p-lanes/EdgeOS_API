@@ -1,6 +1,15 @@
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+)
 from sqlalchemy.orm import Mapped, relationship
 
 from app.core.database import Base
@@ -33,6 +42,14 @@ class Product(Base):
     end_date = Column(DateTime)
     is_active = Column(Boolean, nullable=False, default=True)
     exclusive = Column(Boolean, nullable=False, default=False)
+    insurance_percentage = Column(Float, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            'insurance_percentage IS NULL OR insurance_percentage > 0',
+            name='ck_products_insurance_percentage_positive',
+        ),
+    )
 
     attendees: Mapped[List['Attendee']] = relationship(
         'Attendee',

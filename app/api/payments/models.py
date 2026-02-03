@@ -24,6 +24,8 @@ class PaymentProduct(Base):
     product_description = Column(String, nullable=True)
     product_price = Column(Float)
     product_category = Column(String)
+    insurance_applied = Column(Boolean, default=False)
+    insurance_price = Column(Float, nullable=True)
     created_at = Column(DateTime, default=current_time)
 
     attendee: Mapped['Attendee'] = relationship(

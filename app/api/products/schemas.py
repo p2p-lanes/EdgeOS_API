@@ -17,6 +17,7 @@ class ProductBase(BaseModel):
     end_date: Optional[datetime] = None
     is_active: bool = True
     exclusive: bool = False
+    insurance_percentage: Optional[float] = None
 
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

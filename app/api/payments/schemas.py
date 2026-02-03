@@ -35,6 +35,7 @@ class PaymentCreate(BaseModel):
     products: List[PaymentProduct]
     coupon_code: Optional[str] = None
     edit_passes: Optional[bool] = False
+    insurance: bool = False
 
     @classmethod
     @field_validator('products', mode='before')
@@ -52,6 +53,7 @@ class PaymentPreview(PaymentCreate, PaymentBase):
     group_id: Optional[int] = None
     is_installment_plan: bool = False
     installments_total: Optional[int] = None
+    insurance_amount: Optional[float] = None
 
 
 class PaymentUpdate(BaseModel):
@@ -69,6 +71,8 @@ class PaymentProductResponse(BaseModel):
     product_description: Optional[str]
     product_price: float
     product_category: str
+    insurance_applied: bool = False
+    insurance_price: Optional[float] = None
     created_at: datetime
 
 
