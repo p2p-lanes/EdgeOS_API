@@ -92,7 +92,7 @@ class Application(Base):
     timour_review = Column(String)
     janine_review = Column(String)
     tela_review = Column(String)
-    sophie_review = Column(String)
+    steph_review = Column(String)
     devon_review = Column(String)
     lina_review = Column(String)
 
@@ -202,7 +202,7 @@ class Application(Base):
         self.timour_review = None
         self.janine_review = None
         self.tela_review = None
-        self.sophie_review = None
+        self.steph_review = None
         self.devon_review = None
         self.lina_review = None
 

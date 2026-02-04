@@ -67,30 +67,30 @@ IF(({not_attending} == 1), "withdrawn",
     IF(OR(
         OR(
           AND(({janine_review} == "yes"), 
-              OR(({timour_review} == "yes"), ({tela_review} == "yes"), ({sophie_review} == "yes"), ({devon_review} == "yes"), ({lina_review} == "yes"))), 
+              OR(({timour_review} == "yes"), ({tela_review} == "yes"), ({steph_review} == "yes"), ({devon_review} == "yes"), ({lina_review} == "yes"))), 
           AND(({timour_review} == "yes"), 
-              OR(({tela_review} == "yes"), ({sophie_review} == "yes"), ({devon_review} == "yes"), ({lina_review} == "yes"))), 
+              OR(({tela_review} == "yes"), ({steph_review} == "yes"), ({devon_review} == "yes"), ({lina_review} == "yes"))), 
           AND(({tela_review} == "yes"), 
-              OR(({sophie_review} == "yes"), ({devon_review} == "yes"), ({lina_review} == "yes"))), 
-          AND(({sophie_review} == "yes"), 
+              OR(({steph_review} == "yes"), ({devon_review} == "yes"), ({lina_review} == "yes"))), 
+              AND(({steph_review} == "yes"), 
               OR(({devon_review} == "yes"), ({lina_review} == "yes")))
         ), 
         OR(({janine_review} == "strong yes"), ({timour_review} == "strong yes"), ({tela_review} == "strong yes"), 
-           ({sophie_review} == "strong yes"), ({devon_review} == "strong yes"), ({lina_review} == "strong yes"))
+           ({steph_review} == "strong yes"), ({devon_review} == "strong yes"), ({lina_review} == "strong yes"))
       ), "accepted", 
       IF(OR(
           OR(
             AND(({janine_review} == "no"), 
-                OR(({timour_review} == "no"), ({tela_review} == "no"), ({sophie_review} == "no"), ({devon_review} == "no"), ({lina_review} == "no"))), 
+                OR(({timour_review} == "no"), ({tela_review} == "no"), ({steph_review} == "no"), ({devon_review} == "no"), ({lina_review} == "no"))), 
             AND(({timour_review} == "no"), 
-                OR(({tela_review} == "no"), ({sophie_review} == "no"), ({devon_review} == "no"), ({lina_review} == "no"))), 
+                OR(({tela_review} == "no"), ({steph_review} == "no"), ({devon_review} == "no"), ({lina_review} == "no"))), 
             AND(({tela_review} == "no"), 
-                OR(({sophie_review} == "no"), ({devon_review} == "no"), ({lina_review} == "no"))), 
-            AND(({sophie_review} == "no"), 
+                OR(({steph_review} == "no"), ({devon_review} == "no"), ({lina_review} == "no"))), 
+                AND(({steph_review} == "no"), 
                 OR(({devon_review} == "no"), ({lina_review} == "no")))
           ), 
           OR(({janine_review} == "strong no"), ({timour_review} == "strong no"), ({tela_review} == "strong no"), 
-             ({sophie_review} == "strong no"), ({devon_review} == "strong no"), ({lina_review} == "strong no"))
+             ({steph_review} == "strong no"), ({devon_review} == "strong no"), ({lina_review} == "strong no"))
         ), "rejected", "")
     )
   )
