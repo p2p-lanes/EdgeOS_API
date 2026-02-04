@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, relationship
 
 from app.core.database import Base
@@ -18,6 +18,8 @@ class AttendeeProduct(Base):
     attendee_id = Column(Integer, ForeignKey('attendees.id'), primary_key=True)
     product_id = Column(Integer, ForeignKey('products.id'), primary_key=True)
     quantity = Column(Integer, nullable=False, default=1)
+    insurance_applied = Column(Boolean, default=False)
+    insurance_price = Column(Float, nullable=True)
 
     attendee: Mapped['Attendee'] = relationship(
         'Attendee', back_populates='attendee_products'

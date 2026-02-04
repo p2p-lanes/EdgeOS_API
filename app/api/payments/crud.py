@@ -148,6 +148,8 @@ class CRUDPayment(
                         attendee_id=attendee.id,
                         product_id=product_id,
                         quantity=product_snapshot.quantity,
+                        insurance_applied=product_snapshot.insurance_applied,
+                        insurance_price=product_snapshot.insurance_price,
                     )
                 )
 
