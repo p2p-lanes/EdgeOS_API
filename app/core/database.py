@@ -7,14 +7,17 @@ from .logger import logger
 
 Base = declarative_base()
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_timeout=30,
-    pool_recycle=3600,  # Recycle connections every hour
-    pool_pre_ping=True,  # Validate connections before use
-)
+_engine_kwargs = {}
+if not settings.DATABASE_URL.startswith('sqlite'):
+    _engine_kwargs.update(
+        pool_size=10,
+        max_overflow=20,
+        pool_timeout=30,
+        pool_recycle=3600,  # Recycle connections every hour
+        pool_pre_ping=True,  # Validate connections before use
+    )
+
+engine = create_engine(settings.DATABASE_URL, **_engine_kwargs)
 
 # Create a configured "Session" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

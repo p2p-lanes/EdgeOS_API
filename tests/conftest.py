@@ -149,6 +149,7 @@ def test_popup_city(db_session):
         id=1,
         name='Test City',
         slug='test-city',
+        prefix='TC',
         location='Test Location',
         visible_in_portal=True,
         clickable_in_portal=True,

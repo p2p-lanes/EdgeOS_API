@@ -82,6 +82,14 @@ services:
       - "db_data:/var/lib/postgresql/data"
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  test:
+    build: .
+    environment:
+      ENVIRONMENT: test
+    command: pytest tests/ -v
+    profiles:
+      - test
+
 volumes:
   db_data: {}
   nc_data: {}
