@@ -4,7 +4,6 @@ from typing import List
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.api.email_logs.schemas import EmailEvent
 from app.core.database import Base
 from app.core.utils import current_time
 

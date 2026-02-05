@@ -342,7 +342,7 @@ class CRUDAchievement(
                         e.response.status_code,
                         error_detail,
                     )
-                except:
+                except Exception:
                     error_detail = e.response.text
                     logger.error(
                         'Failed to send Telegram notification. Status: %s, Response: %s',

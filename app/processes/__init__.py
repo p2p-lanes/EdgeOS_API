@@ -1,1 +1,1 @@
-from app.core import models
+from app.core import models as models
