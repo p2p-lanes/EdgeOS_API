@@ -69,7 +69,13 @@ class CRUDPayment(
         payment_data, insurance_per_item = payments_utils.create_payment(db, obj, user)
 
         payment_dict = payment_data.model_dump(
-            exclude={'products', 'original_amount', 'insurance', 'insurance_amount'}
+            exclude={
+                'products',
+                'original_amount',
+                'insurance',
+                'insurance_amount',
+                'variable_amount',
+            }
         )
         payment_dict['edit_passes'] = obj.edit_passes
         db_payment = self.model(**payment_dict)
