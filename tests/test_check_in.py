@@ -82,7 +82,7 @@ def test_virtual_check_in_success(
     response = client.post(
         '/check-in/virtual',
         json={
-            'attendee_id': test_attendee.id,
+            'application_id': test_attendee.application_id,
             'code': test_attendee.check_in_code,
             'arrival_date': arrival_date.isoformat(),
             'departure_date': departure_date.isoformat(),
@@ -117,7 +117,7 @@ def test_virtual_check_in_subsequent(
     response = client.post(
         '/check-in/virtual',
         json={
-            'attendee_id': test_attendee.id,
+            'application_id': test_attendee.application_id,
             'code': test_attendee.check_in_code,
             'arrival_date': arrival_date.isoformat(),
             'departure_date': departure_date.isoformat(),
@@ -132,7 +132,7 @@ def test_virtual_check_in_subsequent(
     response = client.post(
         '/check-in/virtual',
         json={
-            'attendee_id': test_attendee.id,
+            'application_id': test_attendee.application_id,
             'code': test_attendee.check_in_code,
             'arrival_date': arrival_date.isoformat(),
             'departure_date': departure_date.isoformat(),
@@ -156,7 +156,7 @@ def test_virtual_check_in_invalid_api_key(client, test_attendee):
     response = client.post(
         '/check-in/virtual',
         json={
-            'attendee_id': test_attendee.id,
+            'application_id': test_attendee.application_id,
             'code': test_attendee.check_in_code,
             'arrival_date': datetime(2025, 7, 1).isoformat(),
             'departure_date': datetime(2025, 7, 5).isoformat(),
@@ -173,7 +173,7 @@ def test_virtual_check_in_invalid_code(client, test_attendee):
     response = client.post(
         '/check-in/virtual',
         json={
-            'attendee_id': test_attendee.id,
+            'application_id': test_attendee.application_id,
             'code': 'WRONG_CODE',
             'arrival_date': datetime(2025, 7, 1).isoformat(),
             'departure_date': datetime(2025, 7, 5).isoformat(),

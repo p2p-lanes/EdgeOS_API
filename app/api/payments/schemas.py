@@ -81,6 +81,9 @@ class PaymentProductResponse(BaseModel):
 class Payment(PaymentBase):
     id: int
     products_snapshot: List[PaymentProductResponse]
+    is_installment_plan: Optional[bool] = None
+    installments_total: Optional[int] = None
+    installments_paid: Optional[int] = None
 
     model_config = ConfigDict(
         from_attributes=True,

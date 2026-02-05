@@ -112,6 +112,7 @@ class CRUDCheckIn(
             logger.error('Invalid code for application %s', obj.application_id)
             return schemas.CheckInResponse(success=False, first_check_in=False)
 
+        first_check_in = True
         for attendee in application.attendees:
             if not attendee.products:
                 continue
@@ -119,6 +120,7 @@ class CRUDCheckIn(
             existing_check_in = self.get_check_in_by_attendee_id(db, attendee.id)
             if existing_check_in:
                 logger.info('Existing check-in for attendee %s', attendee.id)
+                first_check_in = not existing_check_in.virtual_check_in
                 existing_check_in.code = obj.code
                 existing_check_in.virtual_check_in = True
                 if not existing_check_in.virtual_check_in_timestamp:
@@ -138,7 +140,7 @@ class CRUDCheckIn(
                 )
                 super().create(db, new_check_in, SYSTEM_TOKEN)
 
-        return schemas.CheckInResponse(success=True, first_check_in=True)
+        return schemas.CheckInResponse(success=True, first_check_in=first_check_in)
 
 
 check_in = CRUDCheckIn(models.CheckIn)

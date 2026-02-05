@@ -131,6 +131,7 @@ def test_get_my_poaps_success(client, test_citizen, test_popup_city, db_session)
         name=f'{test_citizen.first_name} {test_citizen.last_name}',
         category='main',
         email=test_citizen.primary_email,
+        check_in_code='TCABCD',
         poap_url='https://example.com/poap/123',
     )
     db_session.add(attendee1)
@@ -141,6 +142,7 @@ def test_get_my_poaps_success(client, test_citizen, test_popup_city, db_session)
         name=f'{test_citizen.first_name} {test_citizen.last_name}',
         category='kid',
         email=test_citizen.primary_email,
+        check_in_code='TCEFGH',
         poap_url=None,
     )
     db_session.add(attendee2)
@@ -151,6 +153,7 @@ def test_get_my_poaps_success(client, test_citizen, test_popup_city, db_session)
         name=f'{test_citizen.first_name} {test_citizen.last_name}',
         category='spouse',
         email=test_citizen.primary_email,
+        check_in_code='TCIJKL',
         poap_url='https://example.com/poap/456',
     )
     db_session.add(attendee3)
@@ -212,6 +215,7 @@ def test_get_my_poaps_no_poaps(client, test_citizen, test_popup_city, db_session
         name=f'{test_citizen.first_name} {test_citizen.last_name}',
         category='main',
         email=test_citizen.primary_email,
+        check_in_code='TCABCD',
         poap_url=None,  # No POAP URL
     )
     db_session.add(attendee)

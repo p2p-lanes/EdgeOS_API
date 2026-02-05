@@ -262,6 +262,7 @@ def test_create_coupon_code_different_popup_city(client, test_popup_city, db_ses
     second_popup = PopUpCity(
         name='Second City',
         slug='second-city',
+        prefix='SC',
         location='Second Location',
         visible_in_portal=True,
         clickable_in_portal=True,

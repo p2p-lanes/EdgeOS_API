@@ -1135,7 +1135,6 @@ def test_simplefi_installment_plan_cancelled_revokes_products(
 
     # Verify payment approved and products assigned
     db_session.refresh(db_payment)
-    db_session.refresh(product)
     assert db_payment.status == 'approved'
 
     # Check products are assigned
@@ -1254,6 +1253,7 @@ def test_simplefi_installment_plan_cancelled_idempotent(
     client,
     auth_headers,
     test_payment_data,
+    test_products,
     mock_create_payment,
     mock_webhook_cache,
     db_session,

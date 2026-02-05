@@ -330,6 +330,14 @@ def mock_simplefi_response():
 
 
 @pytest.fixture(scope='function', autouse=True)
+def mock_ai_review_background():
+    """Mock the AI review background task since it creates its own SessionLocal
+    which doesn't use the test database."""
+    with patch('app.api.applications.crud._run_ai_review_background'):
+        yield
+
+
+@pytest.fixture(scope='function', autouse=True)
 def mock_poap_refresh_lock():
     """Mock the POAP refresh lock for tests since SQLite doesn't support pg_advisory_lock"""
     from contextlib import contextmanager
