@@ -5,6 +5,7 @@ Revises: 43d22c4ec0c7
 Create Date: 2026-02-04 17:03:26.160134
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -20,8 +21,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.add_column('attendee_products', sa.Column('insurance_applied', sa.Boolean(), server_default='false'))
-    op.add_column('attendee_products', sa.Column('insurance_price', sa.Float(), nullable=True))
+    op.add_column(
+        'attendee_products',
+        sa.Column('insurance_applied', sa.Boolean(), server_default='false'),
+    )
+    op.add_column(
+        'attendee_products', sa.Column('insurance_price', sa.Float(), nullable=True)
+    )
 
 
 def downgrade() -> None:
