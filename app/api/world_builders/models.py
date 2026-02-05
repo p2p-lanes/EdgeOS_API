@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from datetime import datetime
+
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 from app.core.utils import current_time
@@ -7,38 +9,34 @@ from app.core.utils import current_time
 class WorldBuilder(Base):
     __tablename__ = 'world_builders'
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True,
-        unique=True,
-        index=True,
-    )
-    email = Column(String, nullable=False)
-    world_address = Column(String, nullable=False)
-    first_name = Column(String)
-    last_name = Column(String)
-    builder_score = Column(Integer, default=0)
-    phone = Column(String)
-    location = Column(String)
-    personal_links = Column(String)
-    x_handle = Column(String)
-    project_description = Column(String)
-    project_stage = Column(String)
-    funding_status = Column(String)
-    team_description = Column(String)
-    tech_stack = Column(String)
-    edge_nexus_benefit = Column(String)
-    edge_nexus_cohort = Column(String)
-    financial_situation = Column(String)
-    financial_support_reason = Column(String)
-    extra_info = Column(String)
-    integration_potential = Column(String)
-    send_proposal = Column(Boolean, default=False)
-    accepted = Column(String)
-    notes = Column(String)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    email: Mapped[str]
+    world_address: Mapped[str]
+    first_name: Mapped[str | None]
+    last_name: Mapped[str | None]
+    builder_score: Mapped[int | None] = mapped_column(default=0)
+    phone: Mapped[str | None]
+    location: Mapped[str | None]
+    personal_links: Mapped[str | None]
+    x_handle: Mapped[str | None]
+    project_description: Mapped[str | None]
+    project_stage: Mapped[str | None]
+    funding_status: Mapped[str | None]
+    team_description: Mapped[str | None]
+    tech_stack: Mapped[str | None]
+    edge_nexus_benefit: Mapped[str | None]
+    edge_nexus_cohort: Mapped[str | None]
+    financial_situation: Mapped[str | None]
+    financial_support_reason: Mapped[str | None]
+    extra_info: Mapped[str | None]
+    integration_potential: Mapped[str | None]
+    send_proposal: Mapped[bool | None] = mapped_column(default=False)
+    accepted: Mapped[str | None]
+    notes: Mapped[str | None]
 
-    created_at = Column(DateTime, default=current_time)
-    updated_at = Column(DateTime, default=current_time, onupdate=current_time)
-    created_by = Column(String)
-    updated_by = Column(String)
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        default=current_time, onupdate=current_time
+    )
+    created_by: Mapped[str | None]
+    updated_by: Mapped[str | None]

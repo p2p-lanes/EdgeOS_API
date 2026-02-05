@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.core.utils import current_time
@@ -15,10 +16,10 @@ class AccountClusterMember(Base):
 
     __tablename__ = 'account_cluster_members'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    cluster_id = Column(Integer, nullable=False, index=True)
-    citizen_id = Column(Integer, ForeignKey('humans.id'), nullable=False, unique=True)
-    created_at = Column(DateTime, default=current_time)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    cluster_id: Mapped[int] = mapped_column(index=True)
+    citizen_id: Mapped[int] = mapped_column(ForeignKey('humans.id'), unique=True)
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
 
     # Relationships
     citizen: Mapped['Citizen'] = relationship('Citizen')
@@ -29,18 +30,16 @@ class ClusterJoinRequest(Base):
 
     __tablename__ = 'cluster_join_requests'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    initiator_citizen_id = Column(
-        Integer, ForeignKey('humans.id'), nullable=False, index=True
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    initiator_citizen_id: Mapped[int] = mapped_column(
+        ForeignKey('humans.id'), index=True
     )
-    target_citizen_id = Column(
-        Integer, ForeignKey('humans.id'), nullable=False, index=True
-    )
-    verification_code = Column(String, nullable=False, unique=True, index=True)
-    code_expiration = Column(DateTime, nullable=False)
+    target_citizen_id: Mapped[int] = mapped_column(ForeignKey('humans.id'), index=True)
+    verification_code: Mapped[str] = mapped_column(unique=True, index=True)
+    code_expiration: Mapped[datetime]
     # pending, verified, expired
-    status = Column(String, nullable=False, default='pending')
-    created_at = Column(DateTime, default=current_time)
+    status: Mapped[str] = mapped_column(default='pending')
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
 
     # Relationships
     initiator: Mapped['Citizen'] = relationship(

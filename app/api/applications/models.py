@@ -1,16 +1,8 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Union
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import Mapped, relationship, synonym
+from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.api.applications.schemas import ApplicationStatus
 from app.core.database import Base
@@ -28,87 +20,83 @@ if TYPE_CHECKING:
 class Application(Base):
     __tablename__ = 'applications'
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True,
-        unique=True,
-        index=True,
-    )
-    first_name = Column(String, index=True, nullable=False)
-    last_name = Column(String, index=True, nullable=False)
-    email = Column(String, index=True, nullable=False)
-    telegram = Column(String)
-    organization = Column(String)
-    role = Column(String)
-    gender = Column(String, nullable=True)
-    age = Column(String, nullable=True)
-    social_media = Column(String)
-    residence = Column(String)
-    local_resident = Column(Boolean)
-    eth_address = Column(String)
-    duration = Column(String)
-    video_url = Column(String)
-    payment_capacity = Column(String)
-    github_profile = Column(String)
-    minting_link = Column(String)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    first_name: Mapped[str] = mapped_column(index=True)
+    last_name: Mapped[str] = mapped_column(index=True)
+    email: Mapped[str] = mapped_column(index=True)
+    telegram: Mapped[str | None]
+    organization: Mapped[str | None]
+    role: Mapped[str | None]
+    gender: Mapped[str | None]
+    age: Mapped[str | None]
+    social_media: Mapped[str | None]
+    residence: Mapped[str | None]
+    local_resident: Mapped[bool | None]
+    eth_address: Mapped[str | None]
+    duration: Mapped[str | None]
+    video_url: Mapped[str | None]
+    payment_capacity: Mapped[str | None]
+    github_profile: Mapped[str | None]
+    minting_link: Mapped[str | None]
 
-    area_of_expertise = Column(String)
-    preferred_dates = Column(String)
-    hackathon_interest = Column(Boolean)
-    host_session = Column(String)
-    personal_goals = Column(String)
-    referral = Column(String)
-    _info_not_shared = Column('info_not_shared', String, nullable=True)
-    investor = Column(Boolean)
+    area_of_expertise: Mapped[str | None]
+    preferred_dates: Mapped[str | None]
+    hackathon_interest: Mapped[bool | None]
+    host_session: Mapped[str | None]
+    personal_goals: Mapped[str | None]
+    referral: Mapped[str | None]
+    _info_not_shared: Mapped[str | None] = mapped_column('info_not_shared', String)
+    investor: Mapped[bool | None]
 
     # Family information
-    brings_spouse = Column(Boolean)
-    spouse_info = Column(String)
-    spouse_email = Column(String)
-    brings_kids = Column(Boolean)
-    kids_info = Column(String)
+    brings_spouse: Mapped[bool | None]
+    spouse_info: Mapped[str | None]
+    spouse_email: Mapped[str | None]
+    brings_kids: Mapped[bool | None]
+    kids_info: Mapped[str | None]
 
     # Renter information
-    is_renter = Column(Boolean, nullable=False, default=False)
-    booking_confirmation = Column(String)
+    is_renter: Mapped[bool] = mapped_column(default=False)
+    booking_confirmation: Mapped[str | None]
 
     # Builder information
-    builder_boolean = Column(Boolean, nullable=False, default=False)
-    builder_description = Column(String)
+    builder_boolean: Mapped[bool] = mapped_column(default=False)
+    builder_description: Mapped[str | None]
 
     # Scholarship information
-    scholarship_request = Column(Boolean, nullable=False, default=False)
-    scholarship_details = Column(String)
-    scholarship_video_url = Column(String)
+    scholarship_request: Mapped[bool] = mapped_column(default=False)
+    scholarship_details: Mapped[str | None]
+    scholarship_video_url: Mapped[str | None]
 
-    total_days = Column(Integer, nullable=True)
+    total_days: Mapped[int | None]
 
-    _residencies_interested_in = Column('residencies_interested_in', String)
-    residencies_text = Column(String)
+    _residencies_interested_in: Mapped[str | None] = mapped_column(
+        'residencies_interested_in', String
+    )
+    residencies_text: Mapped[str | None]
 
-    send_note_to_applicant = Column(String)
+    send_note_to_applicant: Mapped[str | None]
 
-    timour_review = Column(String)
-    janine_review = Column(String)
-    tela_review = Column(String)
-    steph_review = Column(String)
-    devon_review = Column(String)
-    lina_review = Column(String)
+    timour_review: Mapped[str | None]
+    janine_review: Mapped[str | None]
+    tela_review: Mapped[str | None]
+    steph_review: Mapped[str | None]
+    devon_review: Mapped[str | None]
+    lina_review: Mapped[str | None]
 
-    auto_approved = Column(Boolean, nullable=False, default=False)
-    not_attending = Column(Boolean, nullable=False, default=False)
+    auto_approved: Mapped[bool] = mapped_column(default=False)
+    not_attending: Mapped[bool] = mapped_column(default=False)
 
-    ai_review = Column(String, nullable=True)
+    ai_review: Mapped[str | None]
 
-    credit = Column(Float, default=0, nullable=False)
+    credit: Mapped[float] = mapped_column(default=0)
 
-    submitted_at = Column(DateTime, nullable=True)
-    accepted_at = Column(DateTime, nullable=True)
+    submitted_at: Mapped[datetime | None]
+    accepted_at: Mapped[datetime | None]
 
-    requested_discount = Column(Boolean, nullable=False, default=False)
-    _status = Column('status', String)
-    _discount_assigned = Column('discount_assigned', String)
+    requested_discount: Mapped[bool] = mapped_column(default=False)
+    _status: Mapped[str | None] = mapped_column('status', String)
+    _discount_assigned: Mapped[str | None] = mapped_column('discount_assigned', String)
 
     payments: Mapped[List['Payment']] = relationship(
         'Payment', back_populates='application'
@@ -117,27 +105,29 @@ class Application(Base):
         'Attendee', back_populates='application', cascade='all, delete-orphan'
     )
 
-    citizen_id = Column(Integer, ForeignKey('humans.id'), nullable=False)
+    citizen_id: Mapped[int] = mapped_column(ForeignKey('humans.id'))
     citizen: Mapped['Citizen'] = relationship(
         'Citizen', back_populates='applications', lazy='joined'
     )
-    popup_city_id = Column(Integer, ForeignKey('popups.id'), nullable=False)
+    popup_city_id: Mapped[int] = mapped_column(ForeignKey('popups.id'))
     popup_city: Mapped['PopUpCity'] = relationship('PopUpCity', lazy='joined')
 
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey('organizations.id'))
     organization_rel: Mapped[Optional['Organization']] = relationship(
         'Organization', lazy='joined'
     )
 
-    group_id = Column(Integer, ForeignKey('groups.id'), nullable=True)
+    group_id: Mapped[int | None] = mapped_column(ForeignKey('groups.id'))
     group = None
 
-    created_by_leader = Column(Boolean, nullable=False, default=False)
+    created_by_leader: Mapped[bool] = mapped_column(default=False)
 
-    created_at = Column(DateTime, default=current_time)
-    updated_at = Column(DateTime, default=current_time, onupdate=current_time)
-    created_by = Column(String)
-    updated_by = Column(String)
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        default=current_time, onupdate=current_time
+    )
+    created_by: Mapped[str | None]
+    updated_by: Mapped[str | None]
 
     __mapper_args__ = {'exclude_properties': ['citizen', 'popup_city']}
 
@@ -209,14 +199,15 @@ class Application(Base):
     def get_products(self) -> List['Product']:
         return [product for attendee in self.attendees for product in attendee.products]
 
-    def get_main_attendee(self) -> 'Attendee':
+    def get_main_attendee(self) -> Optional['Attendee']:
         for attendee in self.attendees:
             if attendee.category == 'main':
                 return attendee
+        return None
 
     @property
     def red_flag(self) -> bool:
-        return self.citizen.red_flag
+        return self.citizen.red_flag if self.citizen else False
 
 
 def setup_relationships():

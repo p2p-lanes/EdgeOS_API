@@ -1,7 +1,7 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import (
-    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -11,7 +11,7 @@ from sqlalchemy import (
     Table,
     event,
 )
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.core.security import Token, create_access_token
@@ -37,38 +37,32 @@ citizen_organizations = Table(
 class Citizen(Base):
     __tablename__ = 'humans'
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True,
-        unique=True,
-        index=True,
-    )
-    primary_email = Column(String, index=True, nullable=True)
-    secondary_email = Column(String)
-    first_name = Column(String)
-    last_name = Column(String)
-    x_user = Column(String)
-    telegram = Column(String)
-    organization = Column(String)
-    role = Column(String)
-    residence = Column(String)
-    social_media = Column(String)
-    age = Column(String)
-    gender = Column(String)
-    eth_address = Column(String)
-    world_address = Column(String)
-    verified_upon_login = Column(String)
-    referral = Column(String)
-    picture_url = Column(String)
-    red_flag = Column(Boolean, default=False)
-    edge_mapped_sent = Column(Boolean, default=False)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    primary_email: Mapped[str | None] = mapped_column(index=True)
+    secondary_email: Mapped[str | None]
+    first_name: Mapped[str | None]
+    last_name: Mapped[str | None]
+    x_user: Mapped[str | None]
+    telegram: Mapped[str | None]
+    organization: Mapped[str | None]
+    role: Mapped[str | None]
+    residence: Mapped[str | None]
+    social_media: Mapped[str | None]
+    age: Mapped[str | None]
+    gender: Mapped[str | None]
+    eth_address: Mapped[str | None]
+    world_address: Mapped[str | None]
+    verified_upon_login: Mapped[str | None]
+    referral: Mapped[str | None]
+    picture_url: Mapped[str | None]
+    red_flag: Mapped[bool | None] = mapped_column(default=False)
+    edge_mapped_sent: Mapped[bool | None] = mapped_column(default=False)
 
-    email_validated = Column(Boolean, default=False)
-    spice = Column(String)
-    code = Column(Integer)
-    code_expiration = Column(DateTime)
-    third_party_app = Column(String)
+    email_validated: Mapped[bool | None] = mapped_column(default=False)
+    spice: Mapped[str | None]
+    code: Mapped[int | None]
+    code_expiration: Mapped[datetime | None]
+    third_party_app: Mapped[str | None]
 
     applications: Mapped[List['Application']] = relationship(
         'Application', back_populates='citizen'
@@ -87,10 +81,12 @@ class Citizen(Base):
         back_populates='citizens',
     )
 
-    created_at = Column(DateTime, default=current_time)
-    updated_at = Column(DateTime, default=current_time, onupdate=current_time)
-    created_by = Column(String)
-    updated_by = Column(String)
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        default=current_time, onupdate=current_time
+    )
+    created_by: Mapped[str | None]
+    updated_by: Mapped[str | None]
 
     def get_application(self, popup_city_id: int) -> Optional['Application']:
         for application in self.applications:
@@ -114,9 +110,9 @@ class Citizen(Base):
     __table_args__ = (
         Index(
             'ix_humans_primary_email_unique',
-            primary_email,
+            'primary_email',
             unique=True,
-            postgresql_where=(primary_email is not None),
+            postgresql_where=(primary_email.is_not(None)),
         ),
     )
 

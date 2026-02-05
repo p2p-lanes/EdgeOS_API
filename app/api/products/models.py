@@ -1,16 +1,8 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import (
-    Boolean,
-    CheckConstraint,
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-)
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy import CheckConstraint, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.core.utils import current_time
@@ -23,28 +15,22 @@ if TYPE_CHECKING:
 class Product(Base):
     __tablename__ = 'products'
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True,
-        unique=True,
-        index=True,
-    )
-    name = Column(String, nullable=False)
-    slug = Column(String, nullable=False)
-    price = Column(Float, nullable=False)
-    compare_price = Column(Float)
-    popup_city_id = Column(Integer, ForeignKey('popups.id'), index=True, nullable=False)
-    description = Column(String)
-    category = Column(String)
-    attendee_category = Column(String)
-    start_date = Column(DateTime)
-    end_date = Column(DateTime)
-    is_active = Column(Boolean, nullable=False, default=True)
-    exclusive = Column(Boolean, nullable=False, default=False)
-    insurance_percentage = Column(Float, nullable=True)
-    min_price = Column(Float, nullable=True)
-    max_price = Column(Float, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    name: Mapped[str]
+    slug: Mapped[str]
+    price: Mapped[float]
+    compare_price: Mapped[float | None]
+    popup_city_id: Mapped[int] = mapped_column(ForeignKey('popups.id'), index=True)
+    description: Mapped[str | None]
+    category: Mapped[str | None]
+    attendee_category: Mapped[str | None]
+    start_date: Mapped[datetime | None]
+    end_date: Mapped[datetime | None]
+    is_active: Mapped[bool] = mapped_column(default=True)
+    exclusive: Mapped[bool] = mapped_column(default=False)
+    insurance_percentage: Mapped[float | None]
+    min_price: Mapped[float | None]
+    max_price: Mapped[float | None]
 
     __table_args__ = (
         CheckConstraint(
@@ -78,7 +64,9 @@ class Product(Base):
         'PaymentProduct', back_populates='product'
     )
 
-    created_at = Column(DateTime, default=current_time)
-    updated_at = Column(DateTime, default=current_time, onupdate=current_time)
-    created_by = Column(String)
-    updated_by = Column(String)
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        default=current_time, onupdate=current_time
+    )
+    created_by: Mapped[str | None]
+    updated_by: Mapped[str | None]

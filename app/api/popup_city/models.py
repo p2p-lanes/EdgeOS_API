@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import List
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.email_logs.schemas import EmailEvent
 from app.core.database import Base
@@ -11,13 +12,15 @@ from app.core.utils import current_time
 class EmailTemplate(Base):
     __tablename__ = 'popup_email_templates'
 
-    id = Column(Integer, primary_key=True)
-    popup_city_id = Column(Integer, ForeignKey('popups.id'), nullable=False)
-    event = Column(String, nullable=False)
-    template = Column(String, nullable=False)
-    frequency = Column(String)
-    created_at = Column(DateTime, default=current_time)
-    updated_at = Column(DateTime, default=current_time, onupdate=current_time)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    popup_city_id: Mapped[int] = mapped_column(ForeignKey('popups.id'))
+    event: Mapped[str]
+    template: Mapped[str]
+    frequency: Mapped[str | None]
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        default=current_time, onupdate=current_time
+    )
 
     popup_city: Mapped['PopUpCity'] = relationship(
         'PopUpCity', back_populates='templates'
@@ -27,49 +30,45 @@ class EmailTemplate(Base):
 class PopUpCity(Base):
     __tablename__ = 'popups'
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True,
-        unique=True,
-        index=True,
-    )
-    name = Column(String, index=True, nullable=False)
-    slug = Column(String, index=True, nullable=False, unique=True)
-    prefix = Column(String, nullable=False, unique=True)
-    tagline = Column(String)
-    location = Column(String)
-    passes_description = Column(String)
-    image_url = Column(String)
-    express_checkout_background = Column(String)
-    web_url = Column(String)
-    email_image = Column(String)
-    contact_email = Column(String)
-    ticketing_banner_description = Column(String)
-    blog_url = Column(String)
-    twitter_url = Column(String)
-    start_date = Column(DateTime)
-    end_date = Column(DateTime)
-    allows_spouse = Column(Boolean, default=False)
-    allows_children = Column(Boolean, default=False)
-    allows_coupons = Column(Boolean, default=False)
-    clickable_in_portal = Column(Boolean, nullable=True, default=False)
-    visible_in_portal = Column(Boolean, nullable=True, default=False)
-    requires_approval = Column(Boolean, nullable=False, default=True)
-    auto_approval_time = Column(Integer, nullable=True)  # in minutes
-    portal_order = Column(Float, nullable=False, default=0)
-    simplefi_api_key = Column(String)
-    applications_imported = Column(Boolean, nullable=False, default=False)
-    ai_review_prompt = Column(String)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    name: Mapped[str] = mapped_column(index=True)
+    slug: Mapped[str] = mapped_column(index=True, unique=True)
+    prefix: Mapped[str] = mapped_column(unique=True)
+    tagline: Mapped[str | None]
+    location: Mapped[str | None]
+    passes_description: Mapped[str | None]
+    image_url: Mapped[str | None]
+    express_checkout_background: Mapped[str | None]
+    web_url: Mapped[str | None]
+    email_image: Mapped[str | None]
+    contact_email: Mapped[str | None]
+    ticketing_banner_description: Mapped[str | None]
+    blog_url: Mapped[str | None]
+    twitter_url: Mapped[str | None]
+    start_date: Mapped[datetime | None]
+    end_date: Mapped[datetime | None]
+    allows_spouse: Mapped[bool | None] = mapped_column(default=False)
+    allows_children: Mapped[bool | None] = mapped_column(default=False)
+    allows_coupons: Mapped[bool | None] = mapped_column(default=False)
+    clickable_in_portal: Mapped[bool | None] = mapped_column(default=False)
+    visible_in_portal: Mapped[bool | None] = mapped_column(default=False)
+    requires_approval: Mapped[bool] = mapped_column(default=True)
+    auto_approval_time: Mapped[int | None]  # in minutes
+    portal_order: Mapped[float] = mapped_column(default=0)
+    simplefi_api_key: Mapped[str | None]
+    applications_imported: Mapped[bool] = mapped_column(default=False)
+    ai_review_prompt: Mapped[str | None]
 
     templates: Mapped[List[EmailTemplate]] = relationship(
         'EmailTemplate', back_populates='popup_city'
     )
 
-    created_at = Column(DateTime, default=current_time)
-    updated_at = Column(DateTime, default=current_time, onupdate=current_time)
-    created_by = Column(String)
-    updated_by = Column(String)
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        default=current_time, onupdate=current_time
+    )
+    created_by: Mapped[str | None]
+    updated_by: Mapped[str | None]
 
     def get_email_template(self, event: EmailEvent) -> str:
         for t in self.templates:

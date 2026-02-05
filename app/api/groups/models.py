@@ -1,8 +1,9 @@
 import urllib.parse
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.popup_city.models import PopUpCity
 from app.core.config import settings
@@ -18,49 +19,45 @@ if TYPE_CHECKING:
 class GroupLeader(Base):
     __tablename__ = 'group_leaders'
 
-    citizen_id = Column(Integer, ForeignKey('humans.id'), primary_key=True)
-    group_id = Column(Integer, ForeignKey('groups.id'), primary_key=True)
+    citizen_id: Mapped[int] = mapped_column(ForeignKey('humans.id'), primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey('groups.id'), primary_key=True)
 
 
 class GroupMembers(Base):
     __tablename__ = 'group_members'
 
-    citizen_id = Column(Integer, ForeignKey('humans.id'), primary_key=True)
-    group_id = Column(Integer, ForeignKey('groups.id'), primary_key=True)
+    citizen_id: Mapped[int] = mapped_column(ForeignKey('humans.id'), primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey('groups.id'), primary_key=True)
 
 
 class GroupProducts(Base):
     __tablename__ = 'group_products'
 
-    group_id = Column(Integer, ForeignKey('groups.id'), primary_key=True)
-    product_id = Column(Integer, ForeignKey('products.id'), primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey('groups.id'), primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey('products.id'), primary_key=True)
 
 
 class Group(Base):
     __tablename__ = 'groups'
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True,
-        unique=True,
-        index=True,
-    )
-    name = Column(String, nullable=False)
-    slug = Column(String, nullable=False, unique=True)
-    description = Column(String, nullable=True)
-    discount_percentage = Column(Float, nullable=False)
-    popup_city_id = Column(Integer, ForeignKey('popups.id'), index=True, nullable=False)
-    max_members = Column(Integer)
-    is_ambassador_group = Column(Boolean, default=False, nullable=False)
-    ambassador_id = Column(Integer, ForeignKey('humans.id'), nullable=True)
-    ambassador_email = Column(String, nullable=True)
-    welcome_message = Column(String, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    name: Mapped[str]
+    slug: Mapped[str] = mapped_column(unique=True)
+    description: Mapped[str | None]
+    discount_percentage: Mapped[float]
+    popup_city_id: Mapped[int] = mapped_column(ForeignKey('popups.id'), index=True)
+    max_members: Mapped[int | None]
+    is_ambassador_group: Mapped[bool] = mapped_column(default=False)
+    ambassador_id: Mapped[int | None] = mapped_column(ForeignKey('humans.id'))
+    ambassador_email: Mapped[str | None]
+    welcome_message: Mapped[str | None]
 
-    created_at = Column(DateTime, default=current_time)
-    updated_at = Column(DateTime, default=current_time, onupdate=current_time)
-    created_by = Column(String)
-    updated_by = Column(String)
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        default=current_time, onupdate=current_time
+    )
+    created_by: Mapped[str | None]
+    updated_by: Mapped[str | None]
 
     applications: Mapped[List['Application']] = relationship(
         'Application', back_populates='group'

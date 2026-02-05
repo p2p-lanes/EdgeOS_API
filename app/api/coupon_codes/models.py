@@ -1,14 +1,8 @@
+from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    UniqueConstraint,
-)
+from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 from app.core.utils import current_time
@@ -20,26 +14,22 @@ class CouponCode(Base):
         UniqueConstraint('code', 'popup_city_id', name='uix_code_popup_city'),
     )
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True,
-        unique=True,
-        index=True,
-    )
-    code = Column(String, index=True)
-    popup_city_id = Column(Integer, ForeignKey('popups.id'), index=True, nullable=False)
-    _discount_value = Column('discount_value', String)
-    max_uses = Column(Integer)
-    current_uses = Column(Integer, default=0)
-    start_date = Column(DateTime)
-    end_date = Column(DateTime)
-    is_active = Column(Boolean, nullable=False, default=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    code: Mapped[str | None] = mapped_column(index=True)
+    popup_city_id: Mapped[int] = mapped_column(ForeignKey('popups.id'), index=True)
+    _discount_value: Mapped[str | None] = mapped_column('discount_value', String)
+    max_uses: Mapped[int | None]
+    current_uses: Mapped[int | None] = mapped_column(default=0)
+    start_date: Mapped[datetime | None]
+    end_date: Mapped[datetime | None]
+    is_active: Mapped[bool] = mapped_column(default=True)
 
-    created_at = Column(DateTime, default=current_time)
-    updated_at = Column(DateTime, default=current_time, onupdate=current_time)
-    created_by = Column(String)
-    updated_by = Column(String)
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        default=current_time, onupdate=current_time
+    )
+    created_by: Mapped[str | None]
+    updated_by: Mapped[str | None]
 
     @property
     def discount_value(self) -> Optional[float]:

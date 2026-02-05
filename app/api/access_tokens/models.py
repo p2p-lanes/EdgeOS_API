@@ -1,4 +1,6 @@
-from sqlalchemy import Column, DateTime, Integer, String, Text
+from datetime import datetime
+
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 from app.core.utils import current_time
@@ -9,9 +11,11 @@ class AccessToken(Base):
 
     __tablename__ = 'access_tokens'
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
-    value = Column(Text, nullable=False)
-    expires_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=current_time)
-    updated_at = Column(DateTime, default=current_time, onupdate=current_time)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(unique=True, index=True)
+    value: Mapped[str]
+    expires_at: Mapped[datetime | None]
+    created_at: Mapped[datetime | None] = mapped_column(default=current_time)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        default=current_time, onupdate=current_time
+    )
