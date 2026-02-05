@@ -70,14 +70,19 @@ class CRUDEmailLog(
 
         email = application.email
         popup_slug = application.popup_city.slug
-        return _generate_authenticate_url(email, citizen.spice, citizen.id, popup_slug)
+        spice = (
+            citizen.spice or ''
+        )  # spice is guaranteed to exist after the check above
+        return _generate_authenticate_url(email, spice, citizen.id, popup_slug)
 
-    def get_by_email(self, db: Session, email: str) -> List[models.EmailLog]:
+    def get_by_email(self, db: Session, email: Optional[str]) -> List[models.EmailLog]:
+        if not email:
+            return []
         return db.query(self.model).filter(self.model.receiver_email == email).all()
 
     def send_mail(
         self,
-        receiver_mail: str,
+        receiver_mail: Optional[str],
         *,
         event: str,
         popup_city: Optional[PopUpCity] = None,
@@ -90,6 +95,8 @@ class CRUDEmailLog(
         popup_slug: Optional[str] = None,
         attachments: Optional[List[EmailAttachment]] = None,
     ) -> dict:
+        if not receiver_mail:
+            raise ValueError('receiver_mail is required')
         if send_at and not entity_type and not entity_id:
             raise ValueError(
                 'entity_type and entity_id are required if send_at is provided'
@@ -159,13 +166,17 @@ class CRUDEmailLog(
 
     def send_login_mail(
         self,
-        receiver_mail: str,
-        spice: str,
+        receiver_mail: Optional[str],
+        spice: Optional[str],
         citizen_id: int,
         popup_slug: Optional[str] = None,
         world_redirect: bool = False,
         source: Optional[str] = None,
     ):
+        if not receiver_mail:
+            raise ValueError('receiver_mail is required')
+        if not spice:
+            raise ValueError('spice is required')
         authenticate_url = _generate_authenticate_url(
             receiver_mail, spice, citizen_id, popup_slug, world_redirect
         )

@@ -25,13 +25,17 @@ from app.api.payments import models
 
 
 # ---- Helpers ----
-def format_date(dt: datetime) -> str:
+def format_date(dt: datetime | None) -> str:
     # Match your formatDate; tweak to taste
+    if dt is None:
+        return ''
     return dt.strftime('%Y-%m-%d')
 
 
-def format_money(value: float) -> str:
+def format_money(value: float | None) -> str:
     # Backward-compatible wrapper; defaults to 2 decimals
+    if value is None:
+        return '0,00'
     return _format_money(value, 2)
 
 
@@ -46,8 +50,10 @@ def is_crypto_currency(code: str) -> bool:
     return code.upper() in ('BTC', 'ETH')
 
 
-def format_currency(value: float, currency: str) -> str:
-    decimals = 8 if is_crypto_currency(currency) else 2
+def format_currency(value: float | None, currency: str | None) -> str:
+    if value is None:
+        return '0,00'
+    decimals = 8 if currency and is_crypto_currency(currency) else 2
     return _format_money(value, decimals)
 
 
@@ -180,7 +186,8 @@ def generate_invoice_pdf(
     show_discount = discount is not None
     if show_discount:
         headers.append('Discount')
-    show_rate = payment.rate > 1
+    rate = payment.rate or 1.0
+    show_rate = rate > 1
     if show_rate:
         headers.append('Rate')
     headers.append('Amount')
@@ -189,39 +196,37 @@ def generate_invoice_pdf(
 
     popup_name = payment.application.popup_city.name
     # ---- Table rows ----
+    currency = payment.currency or 'USD'
     for item in payment.products_snapshot:
         # Unit price shown in original currency logic:
         # Your TS code shows unit price in original product_price (USD), and rate column if rate>1.
         # For the final amount, you convert to payment.currency and apply discount if any.
-        unit_price_usd = float(item.product_price)
-        qty = int(item.quantity)
+        unit_price_usd = float(item.product_price or 0)
+        qty = int(item.quantity or 1)
+        product_name = item.product_name or ''
 
         # If currency is not USD, show conversion via Rate column and compute amount in payment.currency
         if show_rate:
             # Convert unit to payment.currency: unit_in_currency = USD / rate
-            unit_in_currency = unit_price_usd / payment.rate
+            unit_in_currency = unit_price_usd / rate
             total_unit = unit_in_currency * qty
             total_after_discount = total_unit * (1 - (discount or 0) / 100)
-            desc_text = f'{item.product_name} - {popup_name}'
+            desc_text = f'{product_name} - {popup_name}'
             desc_para = Paragraph(escape(desc_text), styles['Body'])
             row = [str(qty), desc_para, f'{format_money(unit_price_usd)} USD']
             if show_discount:
                 row.append(f'{discount:.0f}%')
-            row.append(f'1 {payment.currency} = {format_money(payment.rate)} USD')
-            row.append(
-                f'{format_currency(total_after_discount, payment.currency)} {payment.currency}'
-            )
+            row.append(f'1 {currency} = {format_money(rate)} USD')
+            row.append(f'{format_currency(total_after_discount, currency)} {currency}')
         else:
             # Currency is USD or 1:1; keep it simple
             total_unit = unit_price_usd * qty
             total_after_discount = total_unit * (1 - (discount or 0) / 100)
-            desc_para = Paragraph(escape(item.product_name), styles['Body'])
+            desc_para = Paragraph(escape(product_name), styles['Body'])
             row = [str(qty), desc_para, f'{format_money(unit_price_usd)} USD']
             if show_discount:
                 row.append(f'{discount:.0f}%')
-            row.append(
-                f'{format_currency(total_after_discount, payment.currency)} {payment.currency}'
-            )
+            row.append(f'{format_currency(total_after_discount, currency)} {currency}')
         table_data.append(row)
 
     # ---- Column widths: auto for non-description, description fills remaining ----
@@ -331,9 +336,10 @@ def generate_invoice_pdf(
 
     # ---- Footer total ----
     # payment.amount is in USD; convert to display currency if needed
-    total = payment.amount / payment.rate if payment.rate > 1 else payment.amount
+    amount = payment.amount or 0.0
+    total = amount / rate if rate > 1 else amount
     total_par = Paragraph(
-        f'<b>Total: {format_currency(total, payment.currency)} {payment.currency}</b>',
+        f'<b>Total: {format_currency(total, currency)} {currency}</b>',
         styles['Bold'],
     )
     flow.append(total_par)

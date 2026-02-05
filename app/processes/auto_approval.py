@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.api.applications.models import Application
 from app.api.applications.schemas import ApplicationStatus
 from app.api.popup_city.models import PopUpCity
-from app.core import models
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.logger import logger

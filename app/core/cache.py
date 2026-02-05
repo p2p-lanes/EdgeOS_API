@@ -7,7 +7,7 @@ from app.core.utils import current_time
 
 class WebhookCache:
     def __init__(self, expiry: timedelta = timedelta(hours=24)):
-        self._cache: Dict[str, Tuple[datetime, str]] = {}
+        self._cache: Dict[str, datetime] = {}
         self._expiry = expiry
         self._lock = Lock()
 

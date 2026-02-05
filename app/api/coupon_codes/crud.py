@@ -8,7 +8,7 @@ from app.core.utils import current_time
 
 
 class CRUDCouponCode(
-    CRUDBase[models.CouponCode, schemas.CouponCode, schemas.CouponCode]
+    CRUDBase[models.CouponCode, schemas.CouponCodeCreate, schemas.CouponCode]
 ):
     def get_by_code(self, db: Session, code: str, popup_city_id: int):
         coupon_code = (

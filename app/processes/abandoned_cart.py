@@ -24,12 +24,14 @@ def get_to_exclude_emails(db: Session) -> List[str]:
     to avoid spamming users.
     """
     one_week_ago = current_time() - timedelta(days=7)
-    return db.scalars(
-        select(models.EmailLog.receiver_email).where(
-            models.EmailLog.event == EmailEvent.ABANDONED_CART.value,
-            models.EmailLog.created_at >= one_week_ago,
-        )
-    ).all()
+    return list(
+        db.scalars(
+            select(models.EmailLog.receiver_email).where(
+                models.EmailLog.event == EmailEvent.ABANDONED_CART.value,
+                models.EmailLog.created_at >= one_week_ago,
+            )
+        ).all()
+    )
 
 
 def process_abandoned_cart(db: Session, to_exclude_emails: List[str]):
@@ -87,10 +89,11 @@ def process_abandoned_cart(db: Session, to_exclude_emails: List[str]):
                     f'<strong>Ticket:</strong> {ps.product_name}',
                 ]
             )
+            product_price = ps.product_price or 0.0
             if p.discount_value:
-                amount = round(ps.product_price * (1 - p.discount_value / 100), 2)
+                amount = round(product_price * (1 - p.discount_value / 100), 2)
             else:
-                amount = ps.product_price
+                amount = product_price
 
             total += amount
             lines.append(f'<strong>Price:</strong> {_format_price(amount)}<br>')

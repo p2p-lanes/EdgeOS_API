@@ -1,3 +1,5 @@
+from typing import Optional
+
 import requests
 
 from app.api.email_logs.schemas import EmailAttachment, EmailStatus
@@ -10,7 +12,7 @@ def send_mail(
     *,
     template: str,
     params: dict,
-    attachments: list[EmailAttachment] = None,
+    attachments: Optional[list[EmailAttachment]] = None,
 ):
     logger.info('sending %s email to %s', template, receiver_mail)
     url = 'https://api.postmarkapp.com/email/withTemplate'

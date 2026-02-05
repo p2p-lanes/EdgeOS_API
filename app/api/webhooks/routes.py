@@ -63,6 +63,9 @@ async def update_status_webhook(
     }
     for row in webhook_payload.data.rows:
         application = db.get(Application, row.id)
+        if not application:
+            logger.warning('Application %s not found. Skipping...', row.id)
+            continue
         email = application.email
         logger.info('Processing webhook for application %s %s', row.id, email)
 
@@ -144,24 +147,27 @@ async def send_email_webhook(
         logger.info('No rows to send email')
         return {'message': 'No rows to send email'}
 
-    fields = [f.strip() for f in fields.split(',')]
+    field_list = [f.strip() for f in fields.split(',')]
     processed_ids = []
 
     logger.info('Sending email %s to %s rows', event, len(webhook_payload.data.rows))
-    logger.info('Fields: %s', fields)
+    logger.info('Fields: %s', field_list)
     send_at = current_time() + timedelta(minutes=delay) if delay else None
 
     for row in webhook_payload.data.rows:
-        row = row.model_dump()
-        if not row.get('email'):
+        row_data = row.model_dump()
+        if not row_data.get('email'):
             logger.info('No email to send email. Skipping...')
             continue
 
-        params = {k: v for k, v in row.items() if k in fields}
+        params = {k: v for k, v in row_data.items() if k in field_list}
         if 'ticketing_url' not in params:
             params['ticketing_url'] = settings.FRONTEND_URL
 
-        application = db.get(Application, row['id'])
+        application = db.get(Application, row_data['id'])
+        if not application:
+            logger.warning('Application %s not found. Skipping...', row_data['id'])
+            continue
 
         if unique:
             exists_email_log = (
@@ -190,7 +196,7 @@ async def send_email_webhook(
         params['ticketing_url'] = email_log.generate_authenticate_url(db, application)
         params['first_name'] = application.first_name
         email_log.send_mail(
-            receiver_mail=row['email'],
+            receiver_mail=row_data['email'],
             event=event,
             popup_city=application.popup_city,
             params=params,
@@ -199,7 +205,7 @@ async def send_email_webhook(
             entity_id=application.id,
         )
 
-        processed_ids.append(row['id'])
+        processed_ids.append(row_data['id'])
 
         is_approved_event = event in [
             EmailEvent.APPLICATION_APPROVED.value,
@@ -210,7 +216,7 @@ async def send_email_webhook(
 
         if is_approved_event and is_patagonia and application.brings_kids:
             email_log.send_mail(
-                receiver_mail=row['email'],
+                receiver_mail=row_data['email'],
                 event=EmailEvent.WELCOME_FAMILIES.value,
                 popup_city=application.popup_city,
                 params=params,

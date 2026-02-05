@@ -121,6 +121,7 @@ class InternalApplicationCreate(ApplicationBase):
     submitted_at: Optional[datetime] = None
     created_by_leader: Optional[bool] = None
     auto_approved: Optional[bool] = None
+    status: Optional[ApplicationStatus] = None  # Override to allow all statuses
 
     @field_validator('email')
     @classmethod

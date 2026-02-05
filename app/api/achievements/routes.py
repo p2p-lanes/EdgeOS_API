@@ -41,12 +41,12 @@ def get_achievements(
     db: Session = Depends(get_db),
 ):
     """Get all achievements (filtered by user permissions)"""
-    return achievement_crud.find(
+    return achievement_crud.get_user_achievements(
         db=db,
+        user=current_user,
         skip=skip,
         limit=limit,
         filters=filters,
-        user=current_user,
         sort_by=sort_by,
         sort_order=sort_order,
     )

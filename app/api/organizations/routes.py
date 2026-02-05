@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api.organizations import crud as organization
+from app.api.organizations.crud import organization as organization_crud
 from app.api.organizations import schemas
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
@@ -16,4 +16,4 @@ def get_organizations(
     current_user: TokenData = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return organization.find(db=db, skip=skip, limit=limit)
+    return organization_crud.find(db=db, skip=skip, limit=limit)

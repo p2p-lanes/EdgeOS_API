@@ -1,7 +1,7 @@
 import csv
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
@@ -15,7 +15,6 @@ from app.api.popup_city import schemas as popup_schemas
 from app.api.popup_city.models import EmailTemplate, PopUpCity
 from app.api.products import crud as product_crud
 from app.api.products import schemas as product_schemas
-from app.core import models
 from app.core.config import settings
 from app.core.database import SessionLocal, create_db
 from app.core.security import SYSTEM_TOKEN, TokenData

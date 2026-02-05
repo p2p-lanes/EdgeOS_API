@@ -1,6 +1,6 @@
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import HTTPException, status
@@ -161,7 +161,7 @@ def initiate_link_request(
 
     # Generate verification code
     code = generate_verification_code()
-    expiration = datetime.utcnow() + timedelta(minutes=15)
+    expiration = datetime.now(timezone.utc) + timedelta(minutes=15)
 
     # Create join request
     request = models.ClusterJoinRequest(
@@ -234,7 +234,7 @@ def verify_and_complete_link(
         )
 
     # Check expiration
-    if datetime.utcnow() > request.code_expiration:
+    if datetime.now(timezone.utc) > request.code_expiration:
         request.status = 'expired'
         db.commit()
         raise HTTPException(
@@ -318,7 +318,7 @@ def leave_cluster(db: Session, citizen_id: int) -> schemas.LeaveClusterResponse:
 
 def cleanup_expired_requests(db: Session):
     """Mark expired pending requests as expired (maintenance task)."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     updated = (
         db.query(models.ClusterJoinRequest)

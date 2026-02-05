@@ -49,10 +49,10 @@ class EmailLogFilter(BaseModel):
 
 
 class EmailAttachment(BaseModel):
-    name: str = Field(alias='Name')
-    content_id: str = Field(alias='ContentID')
-    content: str = Field(alias='Content')
-    content_type: str = Field(alias='ContentType')
+    name: str = Field(serialization_alias='Name')
+    content_id: str = Field(serialization_alias='ContentID')
+    content: str = Field(serialization_alias='Content')
+    content_type: str = Field(serialization_alias='ContentType')
 
     model_config = ConfigDict(
         populate_by_name=True,

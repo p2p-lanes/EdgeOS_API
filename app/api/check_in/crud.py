@@ -6,7 +6,6 @@ from app.api.applications.crud import application as application_crud
 from app.api.attendees.crud import attendee as attendee_crud
 from app.api.attendees.models import AttendeeProduct
 from app.api.base_crud import CRUDBase
-from app.api.products.models import Product
 from app.core.logger import logger
 from app.core.security import SYSTEM_TOKEN
 from app.core.utils import current_time

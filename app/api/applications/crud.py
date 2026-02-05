@@ -5,6 +5,7 @@ import string
 from typing import List, Optional, Tuple, Union
 
 from fastapi import BackgroundTasks, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import and_, case, desc, exists, not_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
@@ -70,7 +71,9 @@ def _generate_attendees_directory_csv(attendees: list[dict]) -> str:
 
 
 def _requested_a_discount(
-    application: Union[models.Application, schemas.Application],
+    application: Union[
+        models.Application, schemas.Application, schemas.InternalApplicationCreate
+    ],
     popup_city: PopUpCity,
 ) -> bool:
     """
@@ -78,13 +81,17 @@ def _requested_a_discount(
     Works with both database models (`models.Application`) and schemas (`schemas.Application`).
     """
     if popup_city.requires_approval:
-        return application.scholarship_request
+        return application.scholarship_request or False
 
-    return application.is_renter or application.scholarship_request
+    return (application.is_renter or False) or (
+        application.scholarship_request or False
+    )
 
 
 def calculate_status(
-    application: Union[models.Application, schemas.Application],
+    application: Union[
+        models.Application, schemas.Application, schemas.InternalApplicationCreate
+    ],
     popup_city: PopUpCity,
     reviews_status: Optional[schemas.ApplicationStatus] = None,
 ) -> Tuple[schemas.ApplicationStatus, bool]:
@@ -134,7 +141,7 @@ def _run_ai_review_background(application_id: int):
 
 
 class CRUDApplication(
-    CRUDBase[models.Application, schemas.ApplicationCreate, schemas.ApplicationCreate]
+    CRUDBase[models.Application, schemas.ApplicationCreate, schemas.ApplicationUpdate]
 ):
     def update_citizen_profile(self, db: Session, application: models.Application):
         citizen = application.citizen
@@ -170,9 +177,15 @@ class CRUDApplication(
         self,
         db: Session,
         obj: schemas.ApplicationCreate,
-        user: TokenData,
+        user: Optional[TokenData] = None,
     ) -> models.Application:
         from app.api.groups.crud import group as groups_crud
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Authentication required to create applications',
+            )
 
         logger.info('Creating application: %s', obj)
         citizen_id = obj.citizen_id
@@ -182,6 +195,7 @@ class CRUDApplication(
 
         group = None
         created_by_leader = False
+        initial_status: Optional[schemas.ApplicationStatus] = None
         if obj.group_id:
             group = groups_crud.get(db, obj.group_id, user)
             created_by_leader = group.is_leader(user.citizen_id)
@@ -190,7 +204,7 @@ class CRUDApplication(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail='Not authorized to create application for another citizen',
                 )
-            obj.status = schemas.ApplicationStatus.ACCEPTED
+            initial_status = schemas.ApplicationStatus.ACCEPTED
         elif obj.citizen_id != user.citizen_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -200,22 +214,27 @@ class CRUDApplication(
         logger.info('Citizen found: %s %s', citizen.id, citizen.primary_email)
         email = citizen.primary_email
 
+        # Use initial_status if set (for group applications), otherwise use obj.status
+        effective_status = initial_status or obj.status
         submitted_at = None
-        if obj.status in [
+        if effective_status in [
             schemas.ApplicationStatus.IN_REVIEW,
             schemas.ApplicationStatus.ACCEPTED,
         ]:
             submitted_at = current_time()
 
-        obj = schemas.InternalApplicationCreate(
-            **obj.model_dump(),
+        obj_data = obj.model_dump()
+        if initial_status is not None:
+            obj_data['status'] = initial_status
+        internal_obj = schemas.InternalApplicationCreate(
+            **obj_data,
             email=email,
             submitted_at=submitted_at,
             created_by_leader=created_by_leader,
         )
 
-        if obj.status != schemas.ApplicationStatus.DRAFT and not group:
-            popup_city_id = obj.popup_city_id
+        if internal_obj.status != schemas.ApplicationStatus.DRAFT and not group:
+            popup_city_id = internal_obj.popup_city_id
             popup = db.query(PopUpCity).filter(PopUpCity.id == popup_city_id).first()
             if not popup:
                 raise HTTPException(
@@ -223,12 +242,14 @@ class CRUDApplication(
                     detail='Popup city not found',
                 )
 
-            obj.status, obj.requested_discount = calculate_status(obj, popup_city=popup)
+            internal_obj.status, internal_obj.requested_discount = calculate_status(
+                internal_obj, popup_city=popup
+            )
 
-        application = super().create(db, obj)
+        application = super().create(db, internal_obj)  # type: ignore[arg-type]
 
         attendee = attendees_schemas.AttendeeCreate(
-            name=f'{obj.first_name} {obj.last_name}'.strip(),
+            name=f'{internal_obj.first_name} {internal_obj.last_name}'.strip(),
             category='main',
             email=email,
             group_id=group.id if group else None,
@@ -252,7 +273,7 @@ class CRUDApplication(
         id: int,
         obj: schemas.ApplicationUpdate,
         user: TokenData,
-        background_tasks: BackgroundTasks,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> models.Application:
         application = super().update(db, id, obj, user)
         popup_city = application.popup_city
@@ -267,8 +288,9 @@ class CRUDApplication(
             )
             if application.status == schemas.ApplicationStatus.IN_REVIEW:
                 _send_application_received_mail(application)
-                # Schedule AI review in background
-                background_tasks.add_task(_run_ai_review_background, application.id)
+                # Schedule AI review in background if background_tasks provided
+                if background_tasks:
+                    background_tasks.add_task(_run_ai_review_background, application.id)
         else:
             requested_discount = _requested_a_discount(application, popup_city)
             application.requested_discount = requested_discount
@@ -285,13 +307,16 @@ class CRUDApplication(
         db: Session,
         skip: int = 0,
         limit: int = 100,
-        filters: Optional[schemas.ApplicationFilter] = None,
+        filters: Optional[BaseModel] = None,
         user: Optional[TokenData] = None,
+        sort_by: str = 'created_at',
+        sort_order: str = 'desc',
     ) -> List[models.Application]:
         if user:
-            filters = filters or schemas.ApplicationFilter()
+            if filters is None or not isinstance(filters, schemas.ApplicationFilter):
+                filters = schemas.ApplicationFilter()
             filters.citizen_id = user.citizen_id
-        return super().find(db, skip, limit, filters, user)
+        return super().find(db, skip, limit, filters, user, sort_by, sort_order)
 
     def create_attendee(
         self,

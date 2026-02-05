@@ -70,7 +70,7 @@ class PopUpCity(Base):
     created_by: Mapped[str | None]
     updated_by: Mapped[str | None]
 
-    def get_email_template(self, event: EmailEvent) -> str:
+    def get_email_template(self, event: str) -> str:
         for t in self.templates:
             if t.event == event:
                 return t.template

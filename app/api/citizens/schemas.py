@@ -27,7 +27,7 @@ class Authenticate(BaseModel):
 
     @field_validator('email')
     @classmethod
-    def decode_email(cls, value: str) -> str:
+    def decode_email(cls, value: Optional[str]) -> Optional[str]:
         if not value:
             return None
         _, email = validate_email(unquote(value))
@@ -35,7 +35,7 @@ class Authenticate(BaseModel):
 
     @field_validator('world_address')
     @classmethod
-    def decode_world_address(cls, value: str) -> str:
+    def decode_world_address(cls, value: Optional[str]) -> Optional[str]:
         if not value:
             return None
         return value.lower()
@@ -95,7 +95,7 @@ class CitizenBase(BaseModel):
 
     @field_validator('secondary_email')
     @classmethod
-    def decode_secondary_email(cls, value: str) -> str:
+    def decode_secondary_email(cls, value: Optional[str]) -> Optional[str]:
         return unquote(value) if value else None
 
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -171,7 +171,7 @@ class CitizenFilter(BaseModel):
 
     @field_validator('primary_email')
     @classmethod
-    def decode_primary_email(cls, value: str) -> str:
+    def decode_primary_email(cls, value: Optional[str]) -> Optional[str]:
         return unquote(value) if value else None
 
 

@@ -7,12 +7,12 @@ from pydantic import BaseModel, field_validator
 class InternalCheckInCreate(BaseModel):
     code: str
     attendee_id: int
-    arrival_date: datetime = None
-    departure_date: datetime = None
+    arrival_date: Optional[datetime] = None
+    departure_date: Optional[datetime] = None
     virtual_check_in: bool = False
     qr_check_in: bool = False
-    qr_scan_timestamp: datetime = None
-    virtual_check_in_timestamp: datetime = None
+    qr_scan_timestamp: Optional[datetime] = None
+    virtual_check_in_timestamp: Optional[datetime] = None
 
 
 class NewCheckIn(BaseModel):

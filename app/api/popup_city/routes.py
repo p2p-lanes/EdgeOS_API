@@ -34,7 +34,7 @@ def get_popup_city(
     current_user: TokenData = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    db_popup_city = popup_city_crud.get(db=db, id=popup_city_id)
+    db_popup_city = popup_city_crud.get(db=db, id=popup_city_id, user=current_user)
     if db_popup_city is None:
         raise HTTPException(status_code=404, detail='Popup city not found')
     return db_popup_city

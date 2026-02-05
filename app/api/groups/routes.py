@@ -165,9 +165,9 @@ def update_group(
     current_user: TokenData = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return group_crud.update_group(
+    return group_crud.update(
         db=db,
-        group_id=group_id,
-        group=group,
+        id=group_id,
+        obj=group,
         user=current_user,
     )

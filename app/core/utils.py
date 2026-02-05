@@ -2,6 +2,7 @@ import json
 import random
 import string
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from uuid import UUID
 
 import jwt
@@ -16,7 +17,7 @@ class Encoder(json.JSONEncoder):
         return super().default(o)
 
 
-def encode(payload: dict, *, expires_delta: timedelta = None) -> str:
+def encode(payload: dict, *, expires_delta: Optional[timedelta] = None) -> str:
     payload['iat'] = current_time()
     if expires_delta:
         payload['exp'] = current_time() + expires_delta

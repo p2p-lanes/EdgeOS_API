@@ -1,7 +1,7 @@
-import base64
 from typing import List, Optional
 
 from fastapi import HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Query, Session
 
 from app.api.applications.models import Application
@@ -30,6 +30,9 @@ class CRUDPayment(
     ) -> Query:
         query = super()._apply_filters(query, filters)
 
+        if not filters:
+            return query
+
         filter_data = filters.model_dump(exclude_none=True)
 
         if 'citizen_id' in filter_data:
@@ -44,13 +47,16 @@ class CRUDPayment(
         db: Session,
         skip: int = 0,
         limit: int = 100,
-        filters: Optional[schemas.PaymentFilter] = None,
+        filters: Optional[BaseModel] = None,
         user: Optional[TokenData] = None,
+        sort_by: str = 'created_at',
+        sort_order: str = 'desc',
     ) -> List[models.Payment]:
         if user:
-            filters = filters or schemas.PaymentFilter()
+            if filters is None or not isinstance(filters, schemas.PaymentFilter):
+                filters = schemas.PaymentFilter()
             filters.citizen_id = user.citizen_id
-        return super().find(db, skip, limit, filters)
+        return super().find(db, skip, limit, filters, user, sort_by, sort_order)
 
     def preview(
         self,

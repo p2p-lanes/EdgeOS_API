@@ -93,7 +93,7 @@ def create_payment(
             'total_amount': amount,
             'currency': 'USD',
             'max_installments': max_installments,
-            'user_email': reference['email'],
+            'user_email': reference['email'] if reference else None,
             'reference': reference if reference else {},
             'interval': 'week',
             'interval_count': 2,  # every 2 weeks

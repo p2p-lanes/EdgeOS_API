@@ -11,10 +11,8 @@ from app.api.applications.schemas import ApplicationFilter, ApplicationStatus
 from app.api.email_logs.crud import email_log as email_log_crud
 from app.api.email_logs.models import EmailLog
 from app.api.email_logs.schemas import EmailStatus
-from app.api.payments.models import Payment, PaymentProduct
 from app.api.popup_city.crud import popup_city as popup_city_crud
 from app.api.popup_city.models import EmailTemplate
-from app.api.products.models import Product
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.logger import logger

@@ -27,7 +27,7 @@ class AttendeeCreate(BaseModel):
 
     @field_validator('email')
     @classmethod
-    def validate_email(cls, value: str) -> str:
+    def validate_email(cls, value: Optional[str]) -> Optional[str]:
         if not value:
             return None
         return value.lower().strip()
@@ -46,7 +46,7 @@ class AttendeeUpdate(BaseModel):
 
     @field_validator('email')
     @classmethod
-    def validate_email(cls, value: str) -> str:
+    def validate_email(cls, value: Optional[str]) -> Optional[str]:
         if not value:
             return None
         return value.lower().strip()

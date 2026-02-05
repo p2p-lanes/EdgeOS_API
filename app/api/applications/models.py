@@ -211,7 +211,6 @@ class Application(Base):
 
 
 def setup_relationships():
-    from app.api.groups.models import Group
 
     if not hasattr(Application, 'group') or Application.group is None:
         Application.group = relationship('Group', lazy='joined')

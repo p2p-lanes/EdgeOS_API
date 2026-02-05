@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.api.citizens.models import Citizen
 
-from app.api.applications import models, schemas
+from app.api.applications import schemas
 from app.api.applications.crud import application as application_crud
 from app.api.attendees import schemas as attendees_schemas
 from app.api.common.schemas import PaginatedResponse, PaginationMetadata

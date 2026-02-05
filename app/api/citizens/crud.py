@@ -5,6 +5,7 @@ from typing import List, Optional, Union
 
 import requests
 from fastapi import HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.access_tokens import schemas as access_token_schemas
@@ -49,14 +50,14 @@ def _refresh_poap_token():
     return access_token, expires_at
 
 
-def _get_poap_token(db: Session):
+def _get_poap_token(db: Session) -> str:
     poap_token = access_token_crud.get_by_name(db, POAP_TOKEN_ID)
     if not poap_token:
         # If token doesn't exist, acquire lock and create it
         with POAP_REFRESH_LOCK.acquire(db):
             # Check again after acquiring lock in case another process created it
             poap_token = access_token_crud.get_by_name(db, POAP_TOKEN_ID)
-            if poap_token:
+            if poap_token and poap_token.value:
                 return poap_token.value
             logger.info('POAP token not found, creating new one')
             token, expires_at = _refresh_poap_token()
@@ -65,21 +66,31 @@ def _get_poap_token(db: Session):
             )
             poap_token = access_token_crud.create(db, update_obj)
             logger.info('POAP token created. Expires at: %s', poap_token.expires_at)
-    elif poap_token.expires_at < current_time() + timedelta(minutes=10):
+    elif poap_token.expires_at and poap_token.expires_at < current_time() + timedelta(
+        minutes=10
+    ):
         # If token is about to expire, acquire lock and refresh it
         with POAP_REFRESH_LOCK.acquire(db):
             # Check expiration again after acquiring lock in case another process refreshed it
             poap_token = access_token_crud.get_by_name(db, POAP_TOKEN_ID)
-            if poap_token.expires_at >= current_time() + timedelta(minutes=10):
-                return poap_token.value
-            logger.info('Refreshing POAP token. Expires at: %s', poap_token.expires_at)
+            if (
+                poap_token
+                and poap_token.expires_at
+                and poap_token.expires_at >= current_time() + timedelta(minutes=10)
+            ):
+                return poap_token.value or ''
+            if poap_token:
+                logger.info(
+                    'Refreshing POAP token. Expires at: %s', poap_token.expires_at
+                )
             token, expires_at = _refresh_poap_token()
             update_obj = access_token_schemas.AccessTokenUpdate(
                 value=token, expires_at=expires_at
             )
             poap_token = access_token_crud.update_by_name(db, POAP_TOKEN_ID, update_obj)
-            logger.info('POAP token updated. Expires at: %s', poap_token.expires_at)
-    return poap_token.value
+            if poap_token:
+                logger.info('POAP token updated. Expires at: %s', poap_token.expires_at)
+    return poap_token.value if poap_token and poap_token.value else ''
 
 
 def _get_poap_qr(qr_hash: str, db: Session):
@@ -107,7 +118,7 @@ def _get_poap_qr(qr_hash: str, db: Session):
 
 
 class CRUDCitizen(
-    CRUDBase[models.Citizen, schemas.CitizenCreate, schemas.CitizenCreate]
+    CRUDBase[models.Citizen, schemas.CitizenCreate, schemas.CitizenUpdate]
 ):
     def _check_permission(self, db_obj: models.Citizen, user: TokenData) -> bool:
         return user == SYSTEM_TOKEN or db_obj.id == user.citizen_id
@@ -117,13 +128,16 @@ class CRUDCitizen(
         db: Session,
         skip: int = 0,
         limit: int = 100,
-        filters: Optional[schemas.CitizenFilter] = None,
+        filters: Optional[BaseModel] = None,
         user: Optional[TokenData] = None,
+        sort_by: str = 'created_at',
+        sort_order: str = 'desc',
     ) -> List[models.Citizen]:
         if user:
-            filters = filters or schemas.CitizenFilter()
+            if filters is None or not isinstance(filters, schemas.CitizenFilter):
+                filters = schemas.CitizenFilter()
             filters.id = user.citizen_id
-        return super().find(db, skip, limit, filters)
+        return super().find(db, skip, limit, filters, user, sort_by, sort_order)
 
     def get_by_email(self, db: Session, email: str) -> Optional[models.Citizen]:
         return db.query(self.model).filter(self.model.primary_email == email).first()

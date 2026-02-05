@@ -1075,7 +1075,6 @@ def test_simplefi_installment_plan_cancelled_revokes_products(
     """Test that cancelled plan revokes products."""
     from app.api.applications.models import Application
     from app.api.attendees.models import AttendeeProduct
-    from app.api.products.models import Product
 
     application = db_session.get(Application, test_payment_data['application_id'])
     application.status = ApplicationStatus.ACCEPTED.value

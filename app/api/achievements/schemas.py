@@ -49,6 +49,8 @@ class AchievementFilter(BaseModel):
     receiver_id: Optional[int] = None
     achievement_type: Optional[str] = None
     message: Optional[str] = None
+    sent_at_from: Optional[datetime] = None
+    sent_at_to: Optional[datetime] = None
 
 
 class AchievementWithCitizen(BaseModel):

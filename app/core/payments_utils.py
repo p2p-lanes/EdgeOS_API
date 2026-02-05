@@ -127,7 +127,8 @@ def _calculate_amounts(
         attendee_id = req_prod.attendee_id
 
         if product_model.min_price is not None:
-            variable_amount += req_prod.custom_amount * quantity
+            # custom_amount is validated as required for variable-price products
+            variable_amount += (req_prod.custom_amount or 0) * quantity
             continue
 
         if attendee_id not in attendees:
@@ -179,7 +180,7 @@ def _calculate_price(
     patreon_amount: float,
     discount_value: float,
     application: Application,
-    edit_passes: bool,
+    edit_passes: bool | None,
 ) -> float:
     credit = _get_credit(application, discount_value) if edit_passes else 0
     logger.info('Credit: %s', credit)
@@ -245,7 +246,7 @@ def _check_patreon_status(
     application: Application,
     valid_products: List[Product],
     requested_product_ids: List[int],
-    edit_passes: bool,
+    edit_passes: bool | None,
 ):
     application_products = [p for a in application.attendees for p in a.products]
     already_patreon = any(p.category == 'patreon' for p in application_products)

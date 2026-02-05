@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 from fastapi import HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.applications.crud import application as applications_crud
@@ -22,7 +23,7 @@ def generate_random_string(length: int = 4) -> str:
     return ''.join(random.choices(string.ascii_lowercase, k=length))
 
 
-class CRUDGroup(CRUDBase[models.Group, schemas.GroupBase, schemas.GroupBase]):
+class CRUDGroup(CRUDBase[models.Group, schemas.GroupBase, schemas.GroupUpdate]):
     def _check_permission(self, db_obj: models.Group, user: TokenData) -> bool:
         """Verifies if user has permission to access this group. Returns True if allowed."""
         if not user:
@@ -37,7 +38,7 @@ class CRUDGroup(CRUDBase[models.Group, schemas.GroupBase, schemas.GroupBase]):
         db: Session,
         skip: int = 0,
         limit: int = 100,
-        filters: Optional[schemas.GroupFilter] = None,
+        filters: Optional[BaseModel] = None,
         user: Optional[TokenData] = None,
         sort_by: str = 'created_at',
         sort_order: str = 'desc',
@@ -69,18 +70,18 @@ class CRUDGroup(CRUDBase[models.Group, schemas.GroupBase, schemas.GroupBase]):
     def update(
         self,
         db: Session,
-        group_id: int,
-        obj_in: schemas.GroupUpdate,
+        id: int,
+        obj: schemas.GroupUpdate,
         user: TokenData,
     ) -> models.Group:
-        group = self.get(db, group_id, user)
+        group = self.get(db, id, user)
         if not self._check_permission(group, user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail='You are not allowed to update this group',
             )
-        group.description = obj_in.description
-        group.welcome_message = obj_in.welcome_message
+        group.description = obj.description
+        group.welcome_message = obj.welcome_message
         db.commit()
         db.refresh(group)
         return group

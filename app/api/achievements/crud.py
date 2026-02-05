@@ -24,9 +24,14 @@ class CRUDAchievement(
         self,
         db: Session,
         obj: schemas.AchievementCreate,
-        user: TokenData,
+        user: Optional[TokenData] = None,
     ) -> models.Achievement:
         """Create a new achievement with automatic sent_at timestamp"""
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Authentication required to create achievements',
+            )
         # Add the sent_at timestamp and sender_id from user token
         obj_data = obj.model_dump()
         obj_data['sent_at'] = current_time()
@@ -40,25 +45,21 @@ class CRUDAchievement(
         today_start = datetime.combine(obj_data['sent_at'].date(), time.min)
         today_end = datetime.combine(obj_data['sent_at'].date(), time.max)
 
-        current_achievements = self.find(
+        daily_count = self._count_daily_achievements(
             db=db,
-            user=user,
-            filters=schemas.AchievementFilter(
-                sender_id=obj_data['sender_id'],
-                sent_at_from=today_start,
-                sent_at_to=today_end,
-            ),
+            sender_id=obj_data['sender_id'],
+            start=today_start,
+            end=today_end,
         )
 
-        if len(current_achievements) >= MAX_ACHIEVEMENTS_PER_DAY:
+        if daily_count >= MAX_ACHIEVEMENTS_PER_DAY:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='You have reached the maximum number of achievements per day',
             )
 
         # Use the base class create method with AchievementBase schema
-        # This includes sender_id from user token and all required fields
-        achievement = super().create(db=db, obj=schemas.AchievementBase(**obj_data))
+        achievement = super().create(db=db, obj=schemas.AchievementBase(**obj_data))  # type: ignore[arg-type]
 
         receiver_id = int(obj_data['receiver_id'])
         sender_id = int(obj_data['sender_id'])
@@ -115,13 +116,31 @@ class CRUDAchievement(
         obj_data['sent_at'] = current_time()
 
         logger.info(obj_data)
-        return super().create(db=db, obj=schemas.AchievementBase(**obj_data))
+        return super().create(db=db, obj=schemas.AchievementBase(**obj_data))  # type: ignore[arg-type]
 
     def _check_permission(self, db_obj: models.Achievement, user: TokenData) -> bool:
         """Check if user can access this achievement"""
         return user == SYSTEM_TOKEN
 
-    def find(
+    def _count_daily_achievements(
+        self,
+        db: Session,
+        sender_id: int,
+        start: datetime,
+        end: datetime,
+    ) -> int:
+        """Count achievements sent by a user within a date range."""
+        return (
+            db.query(self.model)
+            .filter(
+                self.model.sender_id == sender_id,
+                self.model.sent_at >= start,
+                self.model.sent_at <= end,
+            )
+            .count()
+        )
+
+    def get_user_achievements(
         self,
         db: Session,
         user: TokenData,
@@ -130,9 +149,8 @@ class CRUDAchievement(
         filters: Optional[schemas.AchievementFilter] = None,
         sort_by: str = 'sent_at',
         sort_order: str = 'desc',
-    ) -> List[models.Achievement]:
-        """Get achievements with filtering"""
-
+    ) -> schemas.AchievementResponse:
+        """Get achievements sent and received by a user."""
         citizen_id = user.citizen_id
 
         # Get sent achievements with receiver citizen data
@@ -199,12 +217,10 @@ class CRUDAchievement(
                 }
             received_achievements.append(achievement_dict)
 
-        query = {
-            'sent_achievements': sent_achievements,
-            'received_achievements': received_achievements,
-        }
-
-        return query
+        return schemas.AchievementResponse(
+            sent_achievements=sent_achievements,
+            received_achievements=received_achievements,
+        )
 
     def get_by_receiver(
         self, db: Session, receiver_id: int, user: Optional[TokenData] = None

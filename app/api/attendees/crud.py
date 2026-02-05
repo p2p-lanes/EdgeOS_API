@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.base_crud import CRUDBase
@@ -27,13 +28,16 @@ class CRUDAttendees(
         db: Session,
         skip: int = 0,
         limit: int = 100,
-        filters: Optional[schemas.AttendeeFilter] = None,
+        filters: Optional[BaseModel] = None,
         user: Optional[TokenData] = None,
+        sort_by: str = 'created_at',
+        sort_order: str = 'desc',
     ) -> List[models.Attendee]:
         if user:
-            filters = filters or schemas.AttendeeFilter()
+            if filters is None or not isinstance(filters, schemas.AttendeeFilter):
+                filters = schemas.AttendeeFilter()
             filters.citizen_id = user.citizen_id
-        return super().find(db, skip, limit, filters)
+        return super().find(db, skip, limit, filters, user, sort_by, sort_order)
 
     def update(
         self,
