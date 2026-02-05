@@ -43,11 +43,25 @@ class Product(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     exclusive = Column(Boolean, nullable=False, default=False)
     insurance_percentage = Column(Float, nullable=True)
+    min_price = Column(Float, nullable=True)
+    max_price = Column(Float, nullable=True)
 
     __table_args__ = (
         CheckConstraint(
             'insurance_percentage IS NULL OR insurance_percentage > 0',
             name='ck_products_insurance_percentage_positive',
+        ),
+        CheckConstraint(
+            'min_price IS NULL OR min_price > 0',
+            name='ck_products_min_price_positive',
+        ),
+        CheckConstraint(
+            'max_price IS NULL OR max_price > 0',
+            name='ck_products_max_price_positive',
+        ),
+        CheckConstraint(
+            'max_price IS NULL OR min_price IS NULL OR max_price >= min_price',
+            name='ck_products_max_gte_min_price',
         ),
     )
 

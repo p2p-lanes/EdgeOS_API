@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class ProductBase(BaseModel):
@@ -18,6 +18,8 @@ class ProductBase(BaseModel):
     is_active: bool = True
     exclusive: bool = False
     insurance_percentage: Optional[float] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
 
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -25,6 +27,17 @@ class ProductBase(BaseModel):
     model_config = ConfigDict(
         str_strip_whitespace=True,
     )
+
+    @model_validator(mode='after')
+    def validate_price_range(self) -> 'ProductBase':
+        if self.min_price is not None and self.min_price <= 0:
+            raise ValueError('min_price must be greater than 0')
+        if self.max_price is not None and self.max_price <= 0:
+            raise ValueError('max_price must be greater than 0')
+        if self.min_price is not None and self.max_price is not None:
+            if self.max_price < self.min_price:
+                raise ValueError('max_price must be >= min_price')
+        return self
 
 
 class ProductCreate(ProductBase):

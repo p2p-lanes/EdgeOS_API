@@ -28,6 +28,7 @@ class PaymentProduct(BaseModel):
     product_id: int
     attendee_id: int
     quantity: int
+    custom_amount: Optional[float] = None
 
 
 class PaymentCreate(BaseModel):
@@ -54,6 +55,7 @@ class PaymentPreview(PaymentCreate, PaymentBase):
     is_installment_plan: bool = False
     installments_total: Optional[int] = None
     insurance_amount: Optional[float] = None
+    variable_amount: Optional[float] = None
 
 
 class PaymentUpdate(BaseModel):

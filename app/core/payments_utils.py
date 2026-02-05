@@ -23,6 +23,42 @@ def _get_discounted_price(price: float, discount_value: float) -> float:
     return round(price * (1 - discount_value / 100), 2)
 
 
+def _validate_variable_price_products(
+    requested_products: List[schemas.PaymentProduct],
+    product_models: Dict[int, Product],
+) -> None:
+    for req_prod in requested_products:
+        product = product_models.get(req_prod.product_id)
+        if not product:
+            continue
+
+        if product.min_price is not None:
+            if req_prod.custom_amount is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'custom_amount is required for variable-price product: {product.name}',
+                )
+            if req_prod.custom_amount < product.min_price:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'custom_amount must be at least {product.min_price} for {product.name}',
+                )
+            if (
+                product.max_price is not None
+                and req_prod.custom_amount > product.max_price
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'custom_amount must be at most {product.max_price} for {product.name}',
+                )
+        else:
+            if req_prod.custom_amount is not None:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'custom_amount is not allowed for fixed-price product: {product.name}',
+                )
+
+
 def _get_credit(application: Application, discount_value: float) -> float:
     total = 0
     for a in application.attendees:
@@ -70,13 +106,17 @@ def _calculate_amounts(
     requested_products: List[schemas.PaymentProduct],
     already_patreon: bool,
     insurance: bool = False,
-) -> Tuple[float, float, float, float, Dict[Tuple[int, int], float]]:
+) -> Tuple[float, float, float, float, float, Dict[Tuple[int, int], float]]:
     product_ids = list(set(rp.product_id for rp in requested_products))
     product_models = {
         p.id: p for p in db.query(Product).filter(Product.id.in_(product_ids)).all()
     }
 
+    _validate_variable_price_products(requested_products, product_models)
+
     attendees = {}
+    variable_amount = 0.0
+
     for req_prod in requested_products:
         product_model = product_models.get(req_prod.product_id)
         if not product_model:
@@ -85,6 +125,11 @@ def _calculate_amounts(
 
         quantity = req_prod.quantity
         attendee_id = req_prod.attendee_id
+
+        if product_model.min_price is not None:
+            variable_amount += req_prod.custom_amount * quantity
+            continue
+
         if attendee_id not in attendees:
             attendees[attendee_id] = {'standard': 0, 'supporter': 0, 'patreon': 0}
 
@@ -108,6 +153,7 @@ def _calculate_amounts(
     logger.info('Standard amount: %s', standard_amount)
     logger.info('Supporter amount: %s', supporter_amount)
     logger.info('Patreon amount: %s', patreon_amount)
+    logger.info('Variable amount: %s', variable_amount)
 
     insurance_amount = 0.0
     insurance_per_item: Dict[Tuple[int, int], float] = {}
@@ -121,6 +167,7 @@ def _calculate_amounts(
         standard_amount,
         supporter_amount,
         patreon_amount,
+        variable_amount,
         insurance_amount,
         insurance_per_item,
     )
@@ -237,6 +284,7 @@ def _apply_discounts(
         standard_amount,
         supporter_amount,
         patreon_amount,
+        variable_amount,
         insurance_amount,
         insurance_per_item,
     ) = _calculate_amounts(
@@ -246,8 +294,12 @@ def _apply_discounts(
         insurance=obj.insurance,
     )
 
-    response.original_amount = standard_amount + supporter_amount + patreon_amount
-    response.amount = _calculate_price(
+    response.original_amount = (
+        standard_amount + supporter_amount + patreon_amount + variable_amount
+    )
+    response.variable_amount = variable_amount if variable_amount > 0 else None
+
+    discounted_fixed = _calculate_price(
         standard_amount=standard_amount,
         supporter_amount=supporter_amount,
         patreon_amount=patreon_amount,
@@ -255,6 +307,8 @@ def _apply_discounts(
         application=application,
         edit_passes=obj.edit_passes,
     )
+
+    response.amount = discounted_fixed + variable_amount
 
     if application.group:
         response.group_id = application.group.id
@@ -267,8 +321,8 @@ def _apply_discounts(
             application=application,
             edit_passes=obj.edit_passes,
         )
-        if discounted_amount < response.amount:
-            response.amount = discounted_amount
+        if discounted_amount + variable_amount < response.amount:
+            response.amount = discounted_amount + variable_amount
             response.discount_value = discount_value
 
     if obj.coupon_code:
@@ -285,8 +339,8 @@ def _apply_discounts(
             application=application,
             edit_passes=obj.edit_passes,
         )
-        if discounted_amount < response.amount:
-            response.amount = discounted_amount
+        if discounted_amount + variable_amount < response.amount:
+            response.amount = discounted_amount + variable_amount
             response.coupon_code_id = coupon_code.id
             response.coupon_code = coupon_code.code
             response.discount_value = coupon_code.discount_value
