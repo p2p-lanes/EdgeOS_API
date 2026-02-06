@@ -67,14 +67,14 @@ def populate_email_templates(db: Session, popup_city: PopUpCity):
         db.commit()
 
 
-def read_citizen_applications_csv(csv_path: str):
+def read_citizen_applications_csv(csv_path: str) -> list[dict[str, str]]:
     """Read combined citizen and application data from CSV."""
     with open(csv_path, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         return list(reader)
 
 
-def get_or_create_citizen(db: Session, row: dict):
+def get_or_create_citizen(db: Session, row: dict[str, str]):
     """Create a citizen if not exists, return the citizen object."""
     primary_email = row['primary_email'].lower().strip()
     citizen = citizen_crud.citizen.get_by_email(db, primary_email)
@@ -96,7 +96,7 @@ def get_or_create_citizen(db: Session, row: dict):
 
 
 def create_application_for_citizen(
-    db: Session, row: dict, citizen: Citizen, popup_city: PopUpCity
+    db: Session, row: dict[str, str], citizen: Citizen, popup_city: PopUpCity
 ):
     """Create an application for the citizen with status DRAFT."""
     existing = (
@@ -108,9 +108,18 @@ def create_application_for_citizen(
         print(f'Application already exists for {citizen.primary_email}')
         return
 
+    first_name = citizen.first_name or row.get('first_name')
+    last_name = citizen.last_name or row.get('last_name')
+    primary_email = citizen.primary_email or row.get('primary_email')
+
+    if not first_name or not last_name or not primary_email:
+        raise ValueError(
+            f'Missing required citizen fields for application creation: {citizen.id}'
+        )
+
     app_data = app_schemas.ApplicationCreate(
-        first_name=citizen.first_name,
-        last_name=citizen.last_name,
+        first_name=first_name,
+        last_name=last_name,
         telegram=citizen.telegram,
         organization=row['organization'],
         role=row['app_role'],
@@ -119,11 +128,11 @@ def create_application_for_citizen(
         residence=row['residence'],
         local_resident=row['local_resident'].lower() == 'true',
         area_of_expertise=row['area_of_expertise'],
-        status=app_schemas.ApplicationStatus.DRAFT,
+        status=app_schemas.UserSettableStatus.DRAFT,
         popup_city_id=popup_city.id,
         citizen_id=citizen.id,
     )
-    token = TokenData(citizen_id=citizen.id, email=citizen.primary_email)
+    token = TokenData(citizen_id=citizen.id, email=primary_email)
     application = application_crud.application.create(db, app_data, token)
     print(f'Application created: {application.id} for {citizen.primary_email}')
 
