@@ -1,6 +1,6 @@
 from typing import Generic, List, Optional, Type, TypeVar
 
-import psycopg2
+from psycopg2.errors import ForeignKeyViolation, UniqueViolation  # ty: ignore[unresolved-import]
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
@@ -52,7 +52,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         try:
             # Convert to dict and filter out relationship fields that aren't direct columns
             obj_data = obj.model_dump()
-            model_columns = self.model.__table__.columns.keys()
+            model_columns = self.model.__table__.columns.keys()  # type: ignore[union-attr]
             filtered_data = {k: v for k, v in obj_data.items() if k in model_columns}
 
             db_obj = self.model(**filtered_data)
@@ -65,7 +65,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             db.rollback()
             orig = str(e.orig)
             detail = 'Integrity error'
-            if isinstance(e.orig, psycopg2.errors.UniqueViolation) and 'DETAIL' in orig:
+            if isinstance(e.orig, UniqueViolation) and 'DETAIL' in orig:
                 error_detail = orig.split('DETAIL: ')[1].split('\n')[0].strip()
                 if '(' in error_detail and ')' in error_detail:
                     keys = error_detail.split('(')[1].split(')')[0]
@@ -83,7 +83,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def get(self, db: Session, id: int, user: TokenData) -> ModelType:
         """Get a single record by id with permission check."""
-        obj = db.query(self.model).filter(self.model.id == id).first()
+        obj = db.query(self.model).filter(self.model.id == id).first()  # type: ignore[union-attr]
         if not obj:
             logger.error('Record not found')
             raise HTTPException(
@@ -156,7 +156,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             db.rollback()
             logger.error('IntegrityError in delete: %s', e)
 
-            if isinstance(e.orig, psycopg2.errors.ForeignKeyViolation):
+            if isinstance(e.orig, ForeignKeyViolation):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail='Cannot delete this record because it is referenced by other records',

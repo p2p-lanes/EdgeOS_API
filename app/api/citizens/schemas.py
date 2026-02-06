@@ -137,7 +137,6 @@ class Citizen(CitizenBase):
 
     model_config = ConfigDict(
         from_attributes=True,
-        exclude={'applications'},
     )
 
 

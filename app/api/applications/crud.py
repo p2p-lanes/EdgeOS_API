@@ -401,7 +401,7 @@ class CRUDApplication(
         filters: Optional[schemas.AttendeesDirectoryFilter],
         skip: Optional[int],
         limit: Optional[int],
-        user: TokenData,
+        user: Optional[TokenData],
     ) -> Tuple[List[dict], int]:
         # Create the ordering expressions
         info_not_shared_order = case(

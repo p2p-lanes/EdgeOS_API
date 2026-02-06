@@ -207,10 +207,9 @@ class Application(Base):
 
     @property
     def red_flag(self) -> bool:
-        return self.citizen.red_flag if self.citizen else False
+        return bool(self.citizen.red_flag) if self.citizen else False
 
 
 def setup_relationships():
-
     if not hasattr(Application, 'group') or Application.group is None:
         Application.group = relationship('Group', lazy='joined')

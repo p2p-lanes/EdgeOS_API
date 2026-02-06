@@ -181,8 +181,15 @@ class CRUDCitizen(
         db: Session,
         *,
         data: schemas.Authenticate,
-    ) -> models.Citizen:
-        citizen = self.get_by_email(db, data.email)
+    ) -> dict:
+        email = data.email
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Email is required',
+            )
+
+        citizen = self.get_by_email(db, email)
 
         code = random.randint(100000, 999999) if data.use_code else None
         code_expiration = (
@@ -206,7 +213,7 @@ class CRUDCitizen(
                     detail='Citizen not found',
                 )
             to_create = schemas.InternalCitizenCreate(
-                primary_email=data.email,
+                primary_email=email,
                 code=code,
                 code_expiration=code_expiration,
             )
@@ -229,10 +236,10 @@ class CRUDCitizen(
                 event = EmailEvent.AUTH_CITIZEN_BY_CODE.value
 
             email_log.send_mail(
-                data.email,
+                email,
                 event=event,
                 popup_slug=data.popup_slug,
-                params={'code': code, 'email': data.email},
+                params={'code': code, 'email': email},
                 spice=citizen.spice,
                 entity_type='citizen',
                 entity_id=citizen.id,
@@ -240,7 +247,7 @@ class CRUDCitizen(
             )
         else:
             email_log.send_login_mail(
-                data.email,
+                email,
                 citizen.spice,
                 citizen.id,
                 data.popup_slug,
@@ -337,7 +344,10 @@ class CRUDCitizen(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail='Invalid code',
                 )
-            if citizen.code_expiration < current_time():
+            if (
+                citizen.code_expiration is None
+                or citizen.code_expiration < current_time()
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail='Code expired',
@@ -367,13 +377,14 @@ class CRUDCitizen(
         )
 
         if len(linked_citizen_ids) == 1:
-            emails = [citizen.primary_email]
+            emails = [citizen.primary_email] if citizen.primary_email else []
         else:
             emails = [
-                citizen.primary_email
-                for citizen in db.query(models.Citizen)
+                c.primary_email
+                for c in db.query(models.Citizen)
                 .filter(models.Citizen.id.in_(linked_citizen_ids))
                 .all()
+                if c.primary_email is not None
             ]
 
         response = CitizenPoaps(emails=emails, results=[])
@@ -419,7 +430,7 @@ class CRUDCitizen(
 
         return response
 
-    def _get_popup_data(self, application: Application) -> dict:
+    def _get_popup_data(self, application: Application) -> Optional[dict]:
         main_attendee = application.get_main_attendee()
         popup = application.popup_city
         if not main_attendee:
@@ -463,7 +474,9 @@ class CRUDCitizen(
             'popup_name': popup.name,
             'start_date': popup.start_date,
             'end_date': popup.end_date,
-            'total_days': min(total_days, (popup.end_date - popup.start_date).days + 1),
+            'total_days': min(total_days, (popup.end_date - popup.start_date).days + 1)
+            if popup.end_date and popup.start_date
+            else total_days,
             'location': application.popup_city.location,
             'image_url': application.popup_city.image_url,
         }

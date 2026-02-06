@@ -55,7 +55,7 @@ app.include_router(
 
 origins = ['*']
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # type: ignore[invalid-argument-type]
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=['*'],

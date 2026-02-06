@@ -61,6 +61,11 @@ def authenticate(
                     db, data.world_address
                 )
                 if existing_citizen_by_world_address:
+                    if not existing_citizen_by_world_address.primary_email:
+                        raise HTTPException(
+                            status_code=400,
+                            detail='Citizen has no email configured',
+                        )
                     citizen = citizen_crud.login(
                         db=db,
                         email=existing_citizen_by_world_address.primary_email,

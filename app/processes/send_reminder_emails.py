@@ -66,7 +66,9 @@ def process_application_reminders(
     email_template: EmailTemplate,
 ) -> None:
     used_frequencies = get_used_frequencies(db, application.id, email_template.template)
-    from_date = get_reminder_start_date(application, email_template.event)
+    from_date = get_reminder_start_date(
+        application, ReminderEvent(email_template.event)
+    )
     if email_template.event == ReminderEvent.PURCHASE_REMINDER:
         if any(payment.status == 'approved' for payment in application.payments):
             logger.info('Application %s has a paid payment', application.id)
@@ -77,6 +79,8 @@ def process_application_reminders(
         application.id,
         email_template.frequency,
     )
+    if not email_template.frequency:
+        return
     for frequency in email_template.frequency.split(','):
         freq_delta = _get_frequency_timedelta(frequency)
         if freq_delta in used_frequencies:
@@ -150,7 +154,7 @@ def send_reminder_email(db: Session, email_template: EmailTemplate):
             db,
             filters=ApplicationFilter(
                 popup_city_id=popup_city_id,
-                status=get_application_status(email_template.event),
+                status=get_application_status(ReminderEvent(email_template.event)),
             ),
             skip=skip,
             limit=limit,

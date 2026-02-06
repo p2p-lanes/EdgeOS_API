@@ -111,7 +111,7 @@ async def update_status_webhook(
         email_log.cancel_scheduled_emails(
             db,
             entity_type='application',
-            entity_id=row.id,
+            entity_id=int(row.id),
         )
 
         data = {

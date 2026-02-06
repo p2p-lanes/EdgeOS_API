@@ -181,7 +181,7 @@ class CRUDGroup(CRUDBase[models.Group, schemas.GroupBase, schemas.GroupUpdate]):
             group_id = int(group_id)
             group = self.get(db, group_id, user)
         except ValueError:
-            group = self.get_by_slug(db, group_id)
+            group = self.get_by_slug(db, str(group_id))
 
         citizen = citizens_crud.get_or_create(
             db,
@@ -333,7 +333,7 @@ class CRUDGroup(CRUDBase[models.Group, schemas.GroupBase, schemas.GroupUpdate]):
         db: Session,
         group_id: int,
         citizen_id: int,
-        member: schemas.GroupMember,
+        member: schemas.GroupMemberUpdate,
         user: TokenData,
     ) -> schemas.MemberWithProducts:
         """Update a member's information in a group"""

@@ -64,6 +64,8 @@ class CRUDPayment(
         obj: schemas.PaymentCreate,
         user: Optional[TokenData] = None,
     ) -> schemas.PaymentPreview:
+        if not user:
+            raise HTTPException(status_code=401, detail='Authentication required')
         return payments_utils.preview_payment(db, obj, user)
 
     def create(
@@ -72,6 +74,8 @@ class CRUDPayment(
         obj: schemas.PaymentCreate,
         user: Optional[TokenData] = None,
     ) -> models.Payment:
+        if not user:
+            raise HTTPException(status_code=401, detail='Authentication required')
         payment_data, insurance_per_item = payments_utils.create_payment(db, obj, user)
 
         payment_dict = payment_data.model_dump(
@@ -223,7 +227,7 @@ class CRUDPayment(
 
         client_name = f'{first_name} {payment.application.last_name}'
         attachments = None
-        if payment.amount > 0:
+        if payment.amount and payment.amount > 0:
             encoded_pdf = generate_invoice_pdf(
                 payment,
                 client_name,

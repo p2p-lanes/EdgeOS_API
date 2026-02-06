@@ -56,6 +56,8 @@ def review_application(application: Application) -> str | None:
             contents=prompt,
         )
 
+        if not response.text:
+            raise ValueError('AI returned empty response')
         review_text = response.text.strip()
 
         logger.info('AI reviewed application %d', application.id)
