@@ -55,6 +55,7 @@ class Settings:
     WORLD_LOGIN_MESSAGE_HASH: str = os.getenv('WORLD_LOGIN_MESSAGE_HASH', '')
 
     APPLICATIONS_TABLE_ID: str = os.getenv('APPLICATIONS_TABLE_ID', '')
+    APPLICATIONS_API_KEY: str = os.getenv('APPLICATIONS_API_KEY', '')
 
     POAP_API_KEY: str = os.getenv('POAP_API_KEY', '')
     POAP_CLIENT_ID: str = os.getenv('POAP_CLIENT_ID', '')
