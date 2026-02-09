@@ -143,6 +143,10 @@ class Application(InternalApplicationCreate):
     )
 
 
+class ApplicationWithPopupCity(Application):
+    popup_city_name: Optional[str] = None
+
+
 class ApplicationWithAuth(Application):
     authorization: Token
 
