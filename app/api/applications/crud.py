@@ -601,6 +601,17 @@ class CRUDApplication(
                 detail='Cannot delete this application because it is referenced by other records',
             )
 
+    def get_latest_by_email(
+        self, db: Session, email: str
+    ) -> Optional[models.Application]:
+        return (
+            db.query(models.Application)
+            .join(PopUpCity, PopUpCity.id == models.Application.popup_city_id)
+            .filter(models.Application.email == email)
+            .order_by(desc(PopUpCity.start_date))
+            .first()
+        )
+
     def get_distinct_emails_no_products(
         self, db: Session, popup_city_id: int, exclude_emails: List[str] = []
     ) -> list[models.Application]:

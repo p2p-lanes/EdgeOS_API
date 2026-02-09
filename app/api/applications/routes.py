@@ -188,6 +188,22 @@ def get_world_addresses_csv(
     return {'data': world_addresses}
 
 
+@router.get('/search/email', response_model=schemas.Application)
+def get_latest_application_by_email(
+    email: str,
+    x_api_key: str = Header(...),
+    db: Session = Depends(get_db),
+):
+    if x_api_key != settings.APPLICATIONS_API_KEY:
+        raise HTTPException(status_code=403, detail='Invalid API key')
+    application = application_crud.get_latest_by_email(db=db, email=email)
+    if not application:
+        raise HTTPException(
+            status_code=404, detail='No application found for this email'
+        )
+    return application
+
+
 @router.get('/{application_id}', response_model=schemas.Application)
 def get_application(
     application_id: int,
