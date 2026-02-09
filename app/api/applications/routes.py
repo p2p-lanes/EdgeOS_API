@@ -188,7 +188,7 @@ def get_world_addresses_csv(
     return {'data': world_addresses}
 
 
-@router.get('/search/email', response_model=schemas.Application)
+@router.get('/search/email', response_model=schemas.ApplicationWithPopupCity)
 def get_latest_application_by_email(
     email: str,
     x_api_key: str = Header(...),
@@ -201,6 +201,7 @@ def get_latest_application_by_email(
         raise HTTPException(
             status_code=404, detail='No application found for this email'
         )
+    application.popup_city_name = application.popup_city.name
     return application
 
 
