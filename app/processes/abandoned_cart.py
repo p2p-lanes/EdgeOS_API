@@ -131,9 +131,11 @@ def main():
         logger.info('To exclude emails: %s', to_exclude)
         process_abandoned_cart(db, to_exclude)
 
-    logger.info('Sleeping for 2 minutes...')
-    time.sleep(120)
-
 
 if __name__ == '__main__':
-    main()
+    while True:
+        try:
+            main()
+        except Exception as e:
+            logger.error('Error in abandoned cart process: %s', e)
+        time.sleep(120)

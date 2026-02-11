@@ -14,5 +14,9 @@ def send_scheduled_emails():
 
 
 if __name__ == '__main__':
-    send_scheduled_emails()
-    time.sleep(30)
+    while True:
+        try:
+            send_scheduled_emails()
+        except Exception as e:
+            logger.error('Error sending scheduled emails: %s', e)
+        time.sleep(60)

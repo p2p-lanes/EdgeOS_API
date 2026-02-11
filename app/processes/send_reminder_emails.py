@@ -182,7 +182,11 @@ def main():
 
 
 if __name__ == '__main__':
-    logger.info('Starting reminder email process')
-    main()
-    logger.info('Reminder email process completed')
-    time.sleep(5 * 60)
+    while True:
+        try:
+            logger.info('Starting reminder email process')
+            main()
+            logger.info('Reminder email process completed')
+        except Exception as e:
+            logger.error('Error in reminder email process: %s', e)
+        time.sleep(5 * 60)

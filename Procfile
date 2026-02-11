@@ -3,4 +3,3 @@ send_scheduled_emails: python app/processes/send_scheduled_emails.py
 send_reminder_emails: python app/processes/send_reminder_emails.py
 auto_approval: python app/processes/auto_approval.py
 abandoned_cart: python app/processes/abandoned_cart.py
-send_prearrival_emails: python app/processes/send_prearrival_emails.py

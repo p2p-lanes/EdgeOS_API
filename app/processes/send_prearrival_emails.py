@@ -351,8 +351,6 @@ def main():
             'Not running pre-arrival email process in %s environment',
             settings.ENVIRONMENT,
         )
-        logger.info('Sleeping for 10 hours...')
-        time.sleep(10 * 60 * 60)
         return
 
     with SessionLocal() as db:
@@ -361,4 +359,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    while True:
+        try:
+            main()
+        except Exception as e:
+            logger.error('Error in pre-arrival email process: %s', e)
+        time.sleep(10 * 60 * 60)

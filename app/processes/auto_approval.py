@@ -64,7 +64,11 @@ def main():
 
 
 if __name__ == '__main__':
-    logger.info('Starting auto approval process...')
-    main()
-    logger.info('Auto approval process completed. Sleeping for 60 seconds...')
-    time.sleep(60)
+    while True:
+        try:
+            logger.info('Starting auto approval process...')
+            main()
+            logger.info('Auto approval process completed')
+        except Exception as e:
+            logger.error('Error in auto approval process: %s', e)
+        time.sleep(60)
