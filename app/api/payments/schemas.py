@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PaymentSource(str, Enum):
@@ -27,7 +27,7 @@ class PaymentBase(BaseModel):
 class PaymentProduct(BaseModel):
     product_id: int
     attendee_id: int
-    quantity: int
+    quantity: int = Field(ge=1)
     custom_amount: Optional[float] = None
 
 
