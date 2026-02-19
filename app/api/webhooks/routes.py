@@ -236,6 +236,7 @@ async def simplefi_webhook(
 ):
     raw_body = await request.json()
     event_type = raw_body.get('event_type')
+    logger.info('POST /simplefi webhook received, event_type: %s', event_type)
 
     if event_type == 'installment_plan_completed':
         return await _handle_installment_plan_completed(raw_body, db, webhook_cache)
@@ -245,6 +246,10 @@ async def simplefi_webhook(
 
     if event_type == 'installment_plan_cancelled':
         return await _handle_installment_plan_cancelled(raw_body, db, webhook_cache)
+
+    if event_type not in ('new_payment', 'new_card_payment'):
+        logger.info('Unhandled event type: %s. Ignoring.', event_type)
+        return {'message': f'Event type {event_type} not handled'}
 
     # Handle payment-related events (new_payment, new_card_payment)
     webhook_payload = schemas.SimplefiWebhookPayload(**raw_body)
@@ -275,12 +280,6 @@ async def _handle_regular_payment(
     logger.info(
         'Payment request id: %s, event type: %s', payment_request_id, event_type
     )
-    if event_type not in ['new_payment', 'new_card_payment']:
-        logger.info('Event type is not new_payment or new_card_payment. Skipping...')
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Event type is not new_payment or new_card_payment',
-        )
 
     payments = payment_crud.find(
         db, filters=PaymentFilter(external_id=payment_request_id)
