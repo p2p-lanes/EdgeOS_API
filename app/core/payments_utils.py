@@ -454,7 +454,7 @@ def create_payment(
         response.amount,
         reference=reference,
         max_installments=max_installments,
-        name='Eclipse Passes',
+        name=application.popup_city.name,
         simplefi_api_key=simplefi_api_key,
     )
 
