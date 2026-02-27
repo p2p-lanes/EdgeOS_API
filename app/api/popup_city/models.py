@@ -46,6 +46,7 @@ class PopUpCity(Base):
     twitter_url: Mapped[str | None]
     start_date: Mapped[datetime | None]
     end_date: Mapped[datetime | None]
+    installments_deadline: Mapped[datetime | None]
     allows_spouse: Mapped[bool | None] = mapped_column(default=False)
     allows_children: Mapped[bool | None] = mapped_column(default=False)
     allows_coupons: Mapped[bool | None] = mapped_column(default=False)

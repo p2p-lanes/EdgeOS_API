@@ -15,6 +15,7 @@ class PopUpCityBase(BaseModel):
     ticketing_banner_description: Optional[str] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+    installments_deadline: Optional[datetime] = None
     clickable_in_portal: Optional[bool] = False
     visible_in_portal: Optional[bool] = False
     requires_approval: Optional[bool] = True
