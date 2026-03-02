@@ -9,7 +9,7 @@ from app.core.security import TokenData, get_current_user
 router = APIRouter()
 
 
-@router.get('/', response_model=list[schemas.Product])
+@router.get('', response_model=list[schemas.Product])
 def get_products(
     current_user: TokenData = Depends(get_current_user),
     filters: schemas.ProductFilter = Depends(),

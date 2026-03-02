@@ -9,7 +9,7 @@ from app.core.database import get_db
 router = APIRouter()
 
 
-@router.post('/', response_model=schemas.WorldBuilder)
+@router.post('', response_model=schemas.WorldBuilder)
 def create_world_builder(
     world_builder: schemas.WorldBuilderCreate,
     x_api_key: str = Header(...),

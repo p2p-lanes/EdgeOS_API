@@ -146,7 +146,7 @@ def logout(
 
 
 # Get all citizens
-@router.get('/', response_model=list[schemas.Citizen])
+@router.get('', response_model=list[schemas.Citizen])
 def get_citizens(
     current_user: TokenData = Depends(get_current_user),
     filters: schemas.CitizenFilter = Depends(),

@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/', response_model=schemas.Achievement, status_code=status.HTTP_201_CREATED
+    '', response_model=schemas.Achievement, status_code=status.HTTP_201_CREATED
 )
 def create_achievement(
     achievement: schemas.AchievementCreate,
@@ -30,7 +30,7 @@ def create_achievement(
     return achievement_crud.create(db=db, obj=achievement, user=current_user)
 
 
-@router.get('/', response_model=schemas.AchievementResponse)
+@router.get('', response_model=schemas.AchievementResponse)
 def get_achievements(
     current_user: TokenData = Depends(get_current_user),
     filters: schemas.AchievementFilter = Depends(),

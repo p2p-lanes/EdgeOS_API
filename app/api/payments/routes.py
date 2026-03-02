@@ -10,7 +10,7 @@ from app.core.security import TokenData, get_current_user
 router = APIRouter()
 
 
-@router.get('/', response_model=list[schemas.Payment])
+@router.get('', response_model=list[schemas.Payment])
 def get_payments(
     current_user: TokenData = Depends(get_current_user),
     filters: schemas.PaymentFilter = Depends(),
@@ -36,7 +36,7 @@ def get_payment(
     return payment_crud.get(db=db, id=payment_id, user=current_user)
 
 
-@router.post('/', response_model=schemas.Payment)
+@router.post('', response_model=schemas.Payment)
 def create_payment(
     payment: schemas.PaymentCreate,
     current_user: TokenData = Depends(get_current_user),
