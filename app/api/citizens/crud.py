@@ -265,12 +265,12 @@ class CRUDCitizen(
         app_name: str,
     ) -> dict:
         logger.info('Authenticate third-party request: %s %s', email, app_name)
+        created = False
         citizen = self.get_by_email(db, email)
         if not citizen:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Citizen not found',
-            )
+            logger.info('Citizen not found, creating: %s', email)
+            citizen = self.create(db, schemas.CitizenCreate(primary_email=email))
+            created = True
 
         citizen.code = random.randint(100000, 999999)
         citizen.code_expiration = current_time() + timedelta(minutes=5)
@@ -292,7 +292,7 @@ class CRUDCitizen(
             citizen_id=citizen.id,
         )
 
-        return {'message': 'Mail sent successfully'}
+        return {'message': 'Mail sent successfully', 'created': created}
 
     def logout(
         self,
