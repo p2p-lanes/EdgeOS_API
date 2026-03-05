@@ -70,6 +70,7 @@ class Settings:
     HASURA_URL: str = os.getenv('HASURA_URL', '')
 
     GEMINI_API_KEY: str = os.getenv('GEMINI_API_KEY', '')
+    EDGECLAW_API_KEY: str = os.getenv('EDGECLAW_API_KEY', '')
 
     MAX_ALLOWED_INSTALLMENTS: int = int(os.getenv('MAX_ALLOWED_INSTALLMENTS', '6'))
 

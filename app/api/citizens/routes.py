@@ -22,6 +22,7 @@ from app.api.authorized_third_party_apps.crud import (
 from app.api.citizens import schemas
 from app.api.citizens.crud import citizen as citizen_crud
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import TokenData, get_current_user
 from app.core.world import verify_safe_signature
@@ -98,6 +99,24 @@ def authenticate_third_party(
     )
     if not authorized_third_party_app:
         raise HTTPException(status_code=401, detail='Invalid API key')
+    return citizen_crud.authenticate_third_party(
+        db=db,
+        email=data.email,
+        app_name=authorized_third_party_app.name,
+    )
+
+
+@router.post('/authenticate-edgeclaw')
+def authenticate_edgeclaw(
+    data: schemas.AuthenticateThirdParty,
+    db: Session = Depends(get_db),
+):
+    logger.info('Authenticating EdgeClaw citizen: %s', data)
+    authorized_third_party_app = authorized_third_party_app_crud.get_by_api_key(
+        db=db, api_key=settings.EDGECLAW_API_KEY
+    )
+    if not authorized_third_party_app:
+        raise HTTPException(status_code=404, detail='EdgeClaw app not found')
     return citizen_crud.authenticate_third_party(
         db=db,
         email=data.email,
