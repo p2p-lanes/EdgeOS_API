@@ -109,4 +109,6 @@ def create_payment(
         'notification_url': notification_url,
     }
 
-    return _create_payment_request(body, simplefi_api_key)
+    response = _create_payment_request(body, simplefi_api_key)
+    response['checkout_url'] = response['checkout_v2_url']
+    return response

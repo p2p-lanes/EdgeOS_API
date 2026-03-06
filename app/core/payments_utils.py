@@ -462,7 +462,7 @@ def create_payment(
 
     response.external_id = payment_request['id']
     response.status = payment_request['status']
-    response.checkout_url = payment_request['checkout_v2_url']
+    response.checkout_url = payment_request['checkout_url']
 
     # Set installment plan fields
     if max_installments is not None and max_installments > 1:
