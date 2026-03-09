@@ -185,12 +185,13 @@ async def send_email_webhook(
                 continue
 
         if send_at:
-            # Cancel any existing scheduled emails since only one can be active per application
-            logger.info('Cancelling scheduled emails')
+            # Cancel any existing scheduled emails for the same event
+            logger.info('Cancelling scheduled emails for event %s', event)
             email_log.cancel_scheduled_emails(
                 db,
                 entity_type='application',
                 entity_id=application.id,
+                event=event,
             )
 
         params['ticketing_url'] = email_log.generate_authenticate_url(db, application)

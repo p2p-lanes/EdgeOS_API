@@ -237,19 +237,28 @@ class CRUDEmailLog(
                     )
                     db.rollback()
 
-    def cancel_scheduled_emails(self, db: Session, entity_type: str, entity_id: int):
-        count = (
-            db.query(self.model)
-            .filter(
-                self.model.entity_type == entity_type,
-                self.model.entity_id == entity_id,
-                self.model.status == EmailStatus.SCHEDULED,
-            )
-            .update({'status': EmailStatus.CANCELLED})
+    def cancel_scheduled_emails(
+        self,
+        db: Session,
+        entity_type: str,
+        entity_id: int,
+        event: Optional[str] = None,
+    ):
+        query = db.query(self.model).filter(
+            self.model.entity_type == entity_type,
+            self.model.entity_id == entity_id,
+            self.model.status == EmailStatus.SCHEDULED,
         )
+        if event:
+            query = query.filter(self.model.event == event)
+        count = query.update({'status': EmailStatus.CANCELLED})
         db.commit()
         logger.info(
-            'Cancelled %s scheduled emails for %s %s', count, entity_type, entity_id
+            'Cancelled %s scheduled emails for %s %s (event=%s)',
+            count,
+            entity_type,
+            entity_id,
+            event,
         )
         return {'message': 'Scheduled emails cancelled successfully'}
 
