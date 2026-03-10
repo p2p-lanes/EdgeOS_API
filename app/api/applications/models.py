@@ -54,6 +54,7 @@ class Application(Base):
     spouse_email: Mapped[str | None]
     brings_kids: Mapped[bool | None]
     kids_info: Mapped[str | None]
+    interested_in_child_led_projects: Mapped[bool | None]
 
     # Renter information
     is_renter: Mapped[bool] = mapped_column(default=False)

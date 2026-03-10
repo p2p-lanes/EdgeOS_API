@@ -76,6 +76,7 @@ class ApplicationBaseCommon(BaseModel):
     spouse_email: Optional[str] = None
     brings_kids: Optional[bool] = None
     kids_info: Optional[str] = None
+    interested_in_child_led_projects: Optional[bool] = None
 
     # Builder information
     builder_boolean: Optional[bool] = None
