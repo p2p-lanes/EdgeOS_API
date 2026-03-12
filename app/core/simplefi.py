@@ -122,5 +122,5 @@ def create_payment(
     }
 
     response = _create_payment_request(body, simplefi_api_key)
-    response['checkout_url'] = response['checkout_v2_url']
+    # response['checkout_url'] = response['checkout_v2_url']
     return response
