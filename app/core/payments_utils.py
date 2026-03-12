@@ -457,6 +457,7 @@ def create_payment(
         reference=reference,
         max_installments=max_installments,
         name=application.popup_city.name,
+        popup_city_slug=application.popup_city.slug,
         simplefi_api_key=simplefi_api_key,
     )
 
