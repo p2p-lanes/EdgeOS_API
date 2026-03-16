@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class PaymentSource(str, Enum):
     SIMPLEFI = 'SimpleFI'
     STRIPE = 'Stripe'
+    X402 = 'x402'
 
 
 class PaymentBase(BaseModel):

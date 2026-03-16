@@ -74,5 +74,23 @@ class Settings:
 
     MAX_ALLOWED_INSTALLMENTS: int = int(os.getenv('MAX_ALLOWED_INSTALLMENTS', '6'))
 
+    # x402
+    X402_FACILITATOR_URL: str = os.getenv(
+        'X402_FACILITATOR_URL', 'https://www.x402.org/facilitator'
+    )
+    X402_NETWORK: str = os.getenv('X402_NETWORK', 'eip155:8453')
+    X402_USDC_ADDRESS: str = os.getenv(
+        'X402_USDC_ADDRESS', '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+    )
+    X402_PAY_TO: str = os.getenv('X402_PAY_TO', '')
+    X402_MAX_TIMEOUT: int = int(os.getenv('X402_MAX_TIMEOUT', '60'))
+
+    # AgentKit on Base chain
+    AGENTKIT_AGENTBOOK_ADDRESS: str = os.getenv(
+        'AGENTKIT_AGENTBOOK_ADDRESS', '0xE1D1D3526A6FAa37eb36bD10B933C1b77f4561a4'
+    )
+    AGENTKIT_RPC_URL: str = os.getenv('AGENTKIT_RPC_URL', 'https://mainnet.base.org')
+    AGENTKIT_DISCOUNT_PERCENT: int = int(os.getenv('AGENTKIT_DISCOUNT_PERCENT', '10'))
+
 
 settings = Settings()
