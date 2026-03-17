@@ -17,6 +17,7 @@ from app.api.payments.routes import router as payments_router
 from app.api.popup_city.routes import router as popup_cities_router
 from app.api.products.routes import router as products_router
 from app.api.webhooks.routes import router as webhooks_router
+from app.api.agent.routes import router as agent_router
 from app.api.world_builders.routes import router as world_builders_router
 from app.core.config import Environment, settings
 from app.core.database import create_db
@@ -52,6 +53,7 @@ app.include_router(webhooks_router, prefix='/webhooks', tags=['Webhooks'])
 app.include_router(
     world_builders_router, prefix='/world-builders', tags=['World Builders']
 )
+app.include_router(agent_router, prefix='/agent', tags=['Agent'])
 
 origins = ['*']
 app.add_middleware(
@@ -60,6 +62,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
+    expose_headers=['PAYMENT-REQUIRED', 'PAYMENT-RESPONSE'],
 )
 
 
