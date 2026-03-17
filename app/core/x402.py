@@ -18,12 +18,11 @@ def build_payment_requirements(price_usd: float) -> dict:
     return {
         'scheme': 'exact',
         'network': settings.X402_NETWORK,
-        'maxAmountRequired': amount,
         'amount': amount,
         'asset': settings.X402_USDC_ADDRESS,
         'payTo': settings.X402_PAY_TO,
         'maxTimeoutSeconds': settings.X402_MAX_TIMEOUT,
-        'extra': {'name': 'USD Coin', 'version': '2'},
+        'extra': {'name': 'USD Coin', 'version': '2', 'assetTransferMethod': 'eip3009'},
     }
 
 
@@ -34,11 +33,13 @@ def build_payment_required_response(
     agentkit_ext: dict | None = None,
 ) -> dict:
     requirements = build_payment_requirements(price_usd)
-    requirements['description'] = description
-    requirements['resource'] = resource_url
-    requirements['mimeType'] = 'application/json'
     body = {
         'x402Version': 2,
+        'resource': {
+            'url': resource_url,
+            'description': description,
+            'mimeType': 'application/json',
+        },
         'accepts': [requirements],
         'error': 'Payment Required',
     }

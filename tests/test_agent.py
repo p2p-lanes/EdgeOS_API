@@ -73,9 +73,19 @@ class TestAgentBuyTicketAuth:
         assert ak_ext['mode']['type'] == 'discount'
         assert ak_ext['mode']['percent'] == 10
 
-        # Verify the JSON body is also valid (not base64)
+        # Verify requirements use v2 field names
+        req = decoded['accepts'][0]
+        assert 'amount' in req
+        assert 'maxAmountRequired' not in req
+        assert req['extra']['assetTransferMethod'] == 'eip3009'
+
+        # Verify the JSON body has top-level resource (v2 spec)
         body = response.json()
         assert body['x402Version'] == 2
+        assert 'resource' in body
+        assert 'url' in body['resource']
+        assert 'description' in body['resource']
+        assert 'mimeType' in body['resource']
 
 
 class TestAgentBuyTicketValidation:
