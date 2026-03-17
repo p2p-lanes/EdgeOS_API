@@ -267,20 +267,36 @@ def _verify_erc1271_signature(
 
     msg_hash = encode_defunct(text=message)
     # EIP-191 hash: keccak256("\x19Ethereum Signed Message:\n" + len(message) + message)
-    full_hash = w3.keccak(msg_hash.body)
+    full_hash = w3.keccak(msg_hash.version + msg_hash.header + msg_hash.body)
 
     contract = w3.eth.contract(
         address=Web3.to_checksum_address(address),
         abi=ERC1271_ABI,
     )
+    sig_bytes = bytes.fromhex(
+        signature[2:] if signature.startswith('0x') else signature
+    )
+    logger.info(
+        'AgentKit ERC-1271: calling isValidSignature on %s (sig %d bytes, hash %s)',
+        address,
+        len(sig_bytes),
+        full_hash.hex(),
+    )
     try:
         result = contract.functions.isValidSignature(
             full_hash,
-            bytes.fromhex(signature[2:] if signature.startswith('0x') else signature),
+            sig_bytes,
         ).call()
-        return result == ERC1271_MAGIC_VALUE
+        valid = result == ERC1271_MAGIC_VALUE
+        if not valid:
+            logger.warning(
+                'AgentKit ERC-1271: contract returned %s, expected %s',
+                result.hex(),
+                ERC1271_MAGIC_VALUE.hex(),
+            )
+        return valid
     except Exception as e:
-        logger.debug('ERC-1271 check failed for %s: %s', address, e)
+        logger.warning('ERC-1271 check failed for %s: %s', address, e)
         return False
 
 

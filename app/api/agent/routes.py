@@ -46,6 +46,13 @@ def buy_ticket(
     # Step 2: No payment header → return 402 with discount info
     if not payment_signature:
         agentkit_ext = agentkit.build_agentkit_challenge(domain, resource_url)
+        ak_info = agentkit_ext['info']
+        logger.info(
+            '402 challenge: nonce=%s issuedAt=%s domain=%s',
+            ak_info['nonce'],
+            ak_info['issuedAt'],
+            ak_info['domain'],
+        )
         payment_required_body = x402.build_payment_required_response(
             price_usd=price_usd,
             resource_url=resource_url,
@@ -71,6 +78,14 @@ def buy_ticket(
     if agentkit_header:
         try:
             agentkit_payload = agentkit.parse_agentkit_header(agentkit_header)
+            logger.info(
+                'AgentKit header: address=%s domain=%s nonce=%s chainId=%s type=%s',
+                agentkit_payload.get('address'),
+                agentkit_payload.get('domain'),
+                agentkit_payload.get('nonce'),
+                agentkit_payload.get('chainId'),
+                agentkit_payload.get('type'),
+            )
             if agentkit.validate_agentkit_message(
                 agentkit_payload, domain, resource_url
             ):
