@@ -267,7 +267,8 @@ def _verify_erc1271_signature(
 
     msg_hash = encode_defunct(text=message)
     # EIP-191 hash: keccak256("\x19Ethereum Signed Message:\n" + len(message) + message)
-    full_hash = w3.keccak(msg_hash.version + msg_hash.header + msg_hash.body)
+    # SignableMessage.version is b'E' (not b'\x19'), so prepend \x19 explicitly
+    full_hash = w3.keccak(b'\x19' + msg_hash.version + msg_hash.header + msg_hash.body)
 
     contract = w3.eth.contract(
         address=Web3.to_checksum_address(address),
@@ -300,6 +301,41 @@ def _verify_erc1271_signature(
         return False
 
 
+def _build_siwe_message(payload: dict, chain_id: int) -> str:
+    """Build EIP-4361 SIWE message text matching the JS siwe library output.
+
+    The Python siwe library adds an extra newline for an empty statement field,
+    which doesn't match the JS siwe library. We build the message manually to
+    ensure cross-language compatibility.
+    """
+    lines = [
+        f'{payload["domain"]} wants you to sign in with your Ethereum account:',
+        payload['address'],
+    ]
+    statement = payload.get('statement')
+    if statement:
+        lines.append('')
+        lines.append(statement)
+    lines.append('')
+    lines.append(f'URI: {payload["uri"]}')
+    lines.append(f'Version: {payload.get("version", "1")}')
+    lines.append(f'Chain ID: {chain_id}')
+    lines.append(f'Nonce: {payload["nonce"]}')
+    lines.append(f'Issued At: {payload["issuedAt"]}')
+    if payload.get('expirationTime'):
+        lines.append(f'Expiration Time: {payload["expirationTime"]}')
+    if payload.get('notBefore'):
+        lines.append(f'Not Before: {payload["notBefore"]}')
+    if payload.get('requestId'):
+        lines.append(f'Request ID: {payload["requestId"]}')
+    resources = payload.get('resources')
+    if resources:
+        lines.append('Resources:')
+        for r in resources:
+            lines.append(f'- {r}')
+    return '\n'.join(lines)
+
+
 def verify_agentkit_signature(payload: dict) -> str | None:
     """Reconstruct SIWE message from structured fields and verify signature.
 
@@ -307,28 +343,11 @@ def verify_agentkit_signature(payload: dict) -> str | None:
     Tries EOA first, falls back to on-chain ERC-1271 verification.
     """
     try:
-        from siwe import SiweMessage
-
         chain_id = _extract_chain_id(payload.get('chainId', ''))
         address = payload['address']
         signature = payload['signature']
 
-        # Reconstruct SIWE message from structured fields (per AgentKit spec)
-        siwe_msg = SiweMessage(
-            domain=payload['domain'],
-            address=address,
-            uri=payload['uri'],
-            version=payload.get('version', '1'),
-            chain_id=chain_id,
-            nonce=payload['nonce'],
-            issued_at=payload['issuedAt'],
-            statement=payload.get('statement'),
-            expiration_time=payload.get('expirationTime'),
-            not_before=payload.get('notBefore'),
-            request_id=payload.get('requestId'),
-            resources=payload.get('resources'),
-        )
-        message_text = siwe_msg.prepare_message()
+        message_text = _build_siwe_message(payload, chain_id)
         logger.info('AgentKit SIWE message:\n%s', message_text)
         logger.info('AgentKit signature (%d chars): %s', len(signature), signature)
 

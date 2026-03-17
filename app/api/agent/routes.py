@@ -38,7 +38,8 @@ def buy_ticket(
     )
 
     price_usd = payment_preview.amount if payment_preview.amount is not None else 0.0
-    resource_url = str(request.url)
+    backend_base = (settings.BACKEND_URL or str(request.base_url)).rstrip('/')
+    resource_url = f"{backend_base}{request.url.path}"
     domain = (
         urlparse(settings.BACKEND_URL or str(request.base_url)).hostname or 'localhost'
     )

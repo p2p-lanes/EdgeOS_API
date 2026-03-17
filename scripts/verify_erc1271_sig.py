@@ -3,6 +3,7 @@
 # dependencies = [
 #   "web3>=7.0",
 #   "eth-account>=0.13",
+#   "siwe>=4.0",
 # ]
 # ///
 """
@@ -21,10 +22,11 @@ from web3 import Web3
 
 RPC_URL = 'https://mainnet.base.org'
 
-# Smart account address (from logs: payer wallet)
-SMART_ACCOUNT = '0xCCE6A3af2f55e1087C9be9F3c2Ee3634b248fd4C'
+# Smart account address (from AGENTKIT header, NOT the x402 payer)
+SMART_ACCOUNT = '0x7810905860A7E7e5981Fd99cB324444190745D3E'
 
 # The 192-byte ABI-encoded signature (0x-prefixed hex)
+# Paste the signature from the AGENTKIT header here
 SIGNATURE = (
     '0x'
     '0000000000000000000000000000000000000000000000000000000000000000'
@@ -41,8 +43,8 @@ SIWE_ADDRESS = SMART_ACCOUNT
 SIWE_URI = 'https://portaldev.simplefi.tech/agent/buy-ticket'
 SIWE_VERSION = '1'
 SIWE_CHAIN_ID = 8453
-SIWE_NONCE = '746b99698427b1b085f18d8541c3008f'
-SIWE_ISSUED_AT = '2026-03-17T15:08:08Z'
+SIWE_NONCE = 'a1959847f21f7827d6e0f97bc6943d10'
+SIWE_ISSUED_AT = '2026-03-17T15:26:37Z'
 SIWE_RESOURCES = [SIWE_URI]  # ← from challenge info.resources
 
 # ── Script ───────────────────────────────────────────────────────────────────
@@ -62,8 +64,8 @@ ERC1271_ABI = [
 ERC1271_MAGIC = bytes.fromhex('1626ba7e')
 
 
-def build_siwe_message() -> str:
-    """Reconstruct the SIWE message text (EIP-4361 format)."""
+def build_siwe_message_manual() -> str:
+    """Reconstruct the SIWE message text manually (EIP-4361 format)."""
     lines = [
         f'{SIWE_DOMAIN} wants you to sign in with your Ethereum account:',
         SIWE_ADDRESS,
@@ -81,6 +83,23 @@ def build_siwe_message() -> str:
     return '\n'.join(lines)
 
 
+def build_siwe_message_library() -> str:
+    """Reconstruct using Python siwe library (same as server)."""
+    from siwe import SiweMessage
+
+    siwe_msg = SiweMessage(
+        domain=SIWE_DOMAIN,
+        address=SIWE_ADDRESS,
+        uri=SIWE_URI,
+        version=SIWE_VERSION,
+        chain_id=SIWE_CHAIN_ID,
+        nonce=SIWE_NONCE,
+        issued_at=SIWE_ISSUED_AT,
+        resources=SIWE_RESOURCES,
+    )
+    return siwe_msg.prepare_message()
+
+
 def main():
     w3 = Web3(Web3.HTTPProvider(RPC_URL))
     print(f'Connected to Base: {w3.is_connected()}')
@@ -95,20 +114,49 @@ def main():
         return
     print()
 
-    # Build SIWE message
-    message = build_siwe_message()
-    print('=== SIWE Message ===')
-    print(message)
+    # Build SIWE message both ways
+    msg_manual = build_siwe_message_manual()
+    msg_library = build_siwe_message_library()
+
+    print('=== SIWE Message (python siwe library — same as server) ===')
+    print(msg_library)
     print()
+
+    if msg_manual == msg_library:
+        print('Manual and library messages MATCH')
+    else:
+        print('!!! MISMATCH between manual and library messages !!!')
+        print()
+        print('=== SIWE Message (manual) ===')
+        print(msg_manual)
+        print()
+        print('=== Diff (repr) ===')
+        for i, (a, b) in enumerate(zip(msg_manual, msg_library)):
+            if a != b:
+                print(f'  First diff at char {i}: manual={repr(a)} library={repr(b)}')
+                print(
+                    f'  Context manual:  ...{repr(msg_manual[max(0, i - 20) : i + 20])}...'
+                )
+                print(
+                    f'  Context library: ...{repr(msg_library[max(0, i - 20) : i + 20])}...'
+                )
+                break
+        if len(msg_manual) != len(msg_library):
+            print(f'  Length: manual={len(msg_manual)} library={len(msg_library)}')
+    print()
+
+    # Use library message (matches server)
+    message = msg_library
 
     # Compute EIP-191 hash (what personal_sign signs)
     signable = encode_defunct(text=message)
     eip191_hash = w3.keccak(signable.version + signable.header + signable.body)
-    print(f'EIP-191 hash: {eip191_hash.hex()}')
+    print(f'EIP-191 hash (library): {eip191_hash.hex()}')
 
-    # Also show what the buggy code was computing
-    wrong_hash = w3.keccak(signable.body)
-    print(f'Wrong hash (body only): {wrong_hash.hex()}')
+    # Compare with server's logged hash
+    SERVER_HASH = '2c00773e0b89cca1771cc75293ae3beef7844cf3b99a3d24fd5e8dff5c2c8f2d'
+    print(f'Server logged hash:     {SERVER_HASH}')
+    print(f'Hashes match: {eip191_hash.hex() == SERVER_HASH}')
     print()
 
     # Decode signature
