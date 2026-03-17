@@ -64,6 +64,7 @@ AGENTKIT_PAYLOAD_SCHEMA = {
         'nonce': {'type': 'string'},
         'issuedAt': {'type': 'string', 'format': 'date-time'},
         'signature': {'type': 'string'},
+        'resources': {'type': 'array', 'items': {'type': 'string'}},
     },
     'required': sorted(REQUIRED_PAYLOAD_FIELDS),
 }
@@ -105,7 +106,12 @@ _nonce_cache = _NonceCache()
 def build_agentkit_challenge(domain: str, resource_uri: str) -> dict:
     """Build the agentkit extension for a 402 response per AgentKit spec."""
     nonce = os.urandom(16).hex()
-    issued_at = datetime.now(timezone.utc).isoformat()
+    issued_at = (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace('+00:00', 'Z')
+    )
     network = settings.X402_NETWORK
     discount_pct = settings.AGENTKIT_DISCOUNT_PERCENT
 
@@ -239,7 +245,10 @@ def _verify_eoa_signature(message: str, address: str, signature: str) -> bool:
 
     msg_hash = encode_defunct(text=message)
     recovered = Account.recover_message(msg_hash, signature=signature)
-    return recovered.lower() == address.lower()
+    if recovered.lower() != address.lower():
+        logger.debug('AgentKit EOA: recovered %s, expected %s', recovered, address)
+        return False
+    return True
 
 
 def _verify_erc1271_signature(
