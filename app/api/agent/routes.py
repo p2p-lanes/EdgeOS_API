@@ -110,6 +110,7 @@ def buy_ticket(
         logger.error('x402 settle failed: %s', e)
         raise HTTPException(status_code=500, detail='Payment settlement failed')
 
+    logger.info('x402 settle result: %s', settle_result)
     if not settle_result.get('success'):
         raise HTTPException(status_code=500, detail='Payment settlement unsuccessful')
 

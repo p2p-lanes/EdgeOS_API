@@ -76,7 +76,7 @@ class Settings:
 
     # x402
     X402_FACILITATOR_URL: str = os.getenv(
-        'X402_FACILITATOR_URL', 'https://api.cdp.coinbase.com/platform/v2/x402'
+        'X402_FACILITATOR_URL', 'https://facilitator.xpay.sh'
     )
     X402_NETWORK: str = os.getenv('X402_NETWORK', 'eip155:8453')
     X402_USDC_ADDRESS: str = os.getenv(

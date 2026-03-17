@@ -23,7 +23,7 @@ def build_payment_requirements(price_usd: float) -> dict:
         'asset': settings.X402_USDC_ADDRESS,
         'payTo': settings.X402_PAY_TO,
         'maxTimeoutSeconds': settings.X402_MAX_TIMEOUT,
-        'extra': {'name': 'USDC', 'version': '2'},
+        'extra': {'name': 'USD Coin', 'version': '2'},
     }
 
 
@@ -90,5 +90,11 @@ def settle_payment(payment_payload: dict, requirements: dict) -> dict:
                 'paymentRequirements': requirements,
             },
         )
+        if response.status_code >= 400:
+            logger.error(
+                'Facilitator /settle returned %s: %s',
+                response.status_code,
+                response.text[:500],
+            )
         response.raise_for_status()
         return response.json()
