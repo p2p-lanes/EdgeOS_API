@@ -240,15 +240,19 @@ def _extract_chain_id(chain_id_str: str) -> int:
 
 def _verify_eoa_signature(message: str, address: str, signature: str) -> bool:
     """Verify EIP-191 personal_sign (EOA wallets) via ecrecover."""
-    from eth_account.messages import encode_defunct
-    from eth_account import Account
+    try:
+        from eth_account.messages import encode_defunct
+        from eth_account import Account
 
-    msg_hash = encode_defunct(text=message)
-    recovered = Account.recover_message(msg_hash, signature=signature)
-    if recovered.lower() != address.lower():
-        logger.debug('AgentKit EOA: recovered %s, expected %s', recovered, address)
+        msg_hash = encode_defunct(text=message)
+        recovered = Account.recover_message(msg_hash, signature=signature)
+        if recovered.lower() != address.lower():
+            logger.debug('AgentKit EOA: recovered %s, expected %s', recovered, address)
+            return False
+        return True
+    except Exception as e:
+        logger.debug('AgentKit EOA verification error: %s', e)
         return False
-    return True
 
 
 def _verify_erc1271_signature(
