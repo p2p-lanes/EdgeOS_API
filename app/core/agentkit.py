@@ -329,6 +329,8 @@ def verify_agentkit_signature(payload: dict) -> str | None:
             resources=payload.get('resources'),
         )
         message_text = siwe_msg.prepare_message()
+        logger.info('AgentKit SIWE message:\n%s', message_text)
+        logger.info('AgentKit signature (%d chars): %s', len(signature), signature)
 
         # Try EOA verification first (most common)
         if _verify_eoa_signature(message_text, address, signature):
