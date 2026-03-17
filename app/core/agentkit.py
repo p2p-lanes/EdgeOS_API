@@ -311,12 +311,12 @@ def _build_siwe_message(payload: dict, chain_id: int) -> str:
     lines = [
         f'{payload["domain"]} wants you to sign in with your Ethereum account:',
         payload['address'],
+        '',  # EIP-4361: blank line before optional statement
     ]
     statement = payload.get('statement')
     if statement:
-        lines.append('')
         lines.append(statement)
-    lines.append('')
+    lines.append('')  # EIP-4361: blank line after optional statement / before URI fields
     lines.append(f'URI: {payload["uri"]}')
     lines.append(f'Version: {payload.get("version", "1")}')
     lines.append(f'Chain ID: {chain_id}')
