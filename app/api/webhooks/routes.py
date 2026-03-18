@@ -250,7 +250,10 @@ async def simplefi_webhook(
 
     if event_type not in ('new_payment', 'new_card_payment'):
         logger.info('Unhandled event type: %s. Ignoring.', event_type)
-        return {'message': f'Event type {event_type} not handled'}
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Event type is not new_payment or new_card_payment',
+        )
 
     # Handle payment-related events (new_payment, new_card_payment)
     webhook_payload = schemas.SimplefiWebhookPayload(**raw_body)

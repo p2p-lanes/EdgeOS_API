@@ -1,7 +1,7 @@
 from datetime import timedelta
 
+import jwt
 from fastapi import status
-from jose import jwt
 
 from app.core.config import settings
 from app.core.utils import current_time

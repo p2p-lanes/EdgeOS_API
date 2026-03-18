@@ -1,9 +1,9 @@
 from datetime import timedelta
 from typing import Optional
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from app.core.config import settings
@@ -58,7 +58,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
             detail='Token has expired',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-    except JWTError as e:
+    except jwt.InvalidTokenError as e:
         logger.error('Error decoding token: %s', str(e))
         raise credentials_exception
 
