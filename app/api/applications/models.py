@@ -81,9 +81,9 @@ class Application(Base):
     timour_review: Mapped[str | None]
     janine_review: Mapped[str | None]
     tela_review: Mapped[str | None]
-    steph_review: Mapped[str | None]
+    sophie_review: Mapped[str | None]
     devon_review: Mapped[str | None]
-    lina_review: Mapped[str | None]
+    katherine_review: Mapped[str | None]
 
     auto_approved: Mapped[bool] = mapped_column(default=False)
     not_attending: Mapped[bool] = mapped_column(default=False)
@@ -193,9 +193,9 @@ class Application(Base):
         self.timour_review = None
         self.janine_review = None
         self.tela_review = None
-        self.steph_review = None
+        self.sophie_review = None
         self.devon_review = None
-        self.lina_review = None
+        self.katherine_review = None
 
     def get_products(self) -> List['Product']:
         return [product for attendee in self.attendees for product in attendee.products]
