@@ -8,6 +8,7 @@ from app.api.account_clusters.routes import router as account_clusters_router
 from app.api.achievements.routes import router as achievements_router
 from app.api.applications.routes import router as applications_router
 from app.api.attendees.routes import router as attendees_router
+from app.api.calendar.routes import router as calendar_router
 from app.api.check_in.routes import router as check_in_router
 from app.api.citizens.routes import router as citizens_router
 from app.api.coupon_codes.routes import router as coupon_codes_router
@@ -39,6 +40,7 @@ app.include_router(
 app.include_router(achievements_router, prefix='/achievements', tags=['Achievements'])
 app.include_router(applications_router, prefix='/applications', tags=['Applications'])
 app.include_router(attendees_router, prefix='/attendees', tags=['Attendees'])
+app.include_router(calendar_router, prefix='/calendar', tags=['Calendar'])
 app.include_router(check_in_router, prefix='/check-in', tags=['Check In'])
 app.include_router(citizens_router, prefix='/citizens', tags=['Citizens'])
 app.include_router(coupon_codes_router, prefix='/coupon-codes', tags=['Coupon Codes'])

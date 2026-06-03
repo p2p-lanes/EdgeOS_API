@@ -1,6 +1,7 @@
 # Import all models here to ensure SQLAlchemy can set up relationships correctly
 from app.api.applications.models import Application
 from app.api.attendees.models import Attendee
+from app.api.calendar.models import CalendarSubscription
 from app.api.citizens.models import Citizen
 from app.api.email_logs.models import EmailLog
 from app.api.groups.models import Group
@@ -13,6 +14,7 @@ from app.api.products.models import Product
 __all__ = [
     'Application',
     'Attendee',
+    'CalendarSubscription',
     'Citizen',
     'EmailLog',
     'Group',
