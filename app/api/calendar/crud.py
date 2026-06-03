@@ -86,10 +86,12 @@ def get_linked_emails(db: Session, citizen_id: int) -> List[str]:
     linked_ids = get_linked_citizen_ids(db, citizen_id)
     citizens = db.query(Citizen).filter(Citizen.id.in_(linked_ids)).all()
 
-    emails = set()
+    # The Social Layer `_in` filter matches profile.email exactly, so we must pass
+    # emails in their stored case (matching the existing event-count path). Dedupe
+    # case-insensitively but keep the first-seen original form.
+    by_lower: dict[str, str] = {}
     for citizen in citizens:
-        if citizen.primary_email:
-            emails.add(citizen.primary_email.lower())
-        if citizen.secondary_email:
-            emails.add(citizen.secondary_email.lower())
-    return sorted(emails)
+        for email in (citizen.primary_email, citizen.secondary_email):
+            if email and email.lower() not in by_lower:
+                by_lower[email.lower()] = email
+    return sorted(by_lower.values())

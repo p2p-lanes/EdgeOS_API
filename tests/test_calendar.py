@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from app.api.calendar import ics
+from app.api.calendar import crud, ics
 from app.core.config import settings
 from tests.conftest import get_auth_headers_for_citizen
 
@@ -136,6 +136,39 @@ def test_feed_with_no_events_is_valid_empty_calendar(client, auth_headers):
     assert response.status_code == 200
     assert 'BEGIN:VCALENDAR' in response.text
     assert 'BEGIN:VEVENT' not in response.text
+
+
+def test_feed_is_not_publicly_cacheable(client, auth_headers):
+    """The token is a bearer secret, so shared caches must not store the feed
+    (otherwise a revoked token's old response could still be served)."""
+    token = client.post('/calendar/subscription', headers=auth_headers).json()['token']
+
+    with patch(f'{ICS_MODULE}.fetch_rsvp_events', return_value=[]):
+        response = client.get(f'/calendar/{token}/rsvp.ics')
+
+    cache_control = response.headers.get('cache-control', '')
+    assert 'public' not in cache_control
+    assert 'no-store' in cache_control
+
+
+# ---------------------------------------------------------------------------
+# Linked-email resolution
+# ---------------------------------------------------------------------------
+
+
+def test_get_linked_emails_preserves_stored_case(db_session, create_test_citizen):
+    """Social Layer matches profile.email exactly, so stored case must be kept
+    (mirrors the existing event-count path) rather than lowercased."""
+    citizen = create_test_citizen(1)
+    citizen.primary_email = 'Mixed.Case@Example.com'
+    citizen.secondary_email = 'Second@Example.COM'
+    db_session.commit()
+
+    emails = crud.get_linked_emails(db_session, citizen.id)
+
+    assert 'Mixed.Case@Example.com' in emails
+    assert 'Second@Example.COM' in emails
+    assert 'mixed.case@example.com' not in emails  # not lowercased
 
 
 # ---------------------------------------------------------------------------

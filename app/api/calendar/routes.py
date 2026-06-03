@@ -100,6 +100,10 @@ def rsvp_feed(token: str, db: Session = Depends(get_db)):
         media_type='text/calendar; charset=utf-8',
         headers={
             'Content-Disposition': 'inline; filename="rsvp.ics"',
-            'Cache-Control': 'public, max-age=3600',
+            # The URL token is a per-user bearer secret, so the feed must never be
+            # stored by shared caches/CDNs — otherwise a revoked/regenerated token's
+            # old response could still be served. Clients learn the poll cadence from
+            # the in-body REFRESH-INTERVAL / X-PUBLISHED-TTL, not HTTP caching.
+            'Cache-Control': 'private, no-store',
         },
     )
